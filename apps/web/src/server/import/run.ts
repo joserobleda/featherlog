@@ -3,6 +3,7 @@ import {
   createPost,
   findImportedPost,
   findWorkspaceBySlug,
+  getPost,
   listMembers,
   recordImport,
   setTranslation,
@@ -28,11 +29,23 @@ export type HeadwayImportOptions = {
   sources: { account: string; locale: string }[];
   dryRun?: boolean;
   overrides?: PairOverrides;
+  /**
+   * Translations to add to imported posts (e.g. a language missing in Headway), keyed by the
+   * Headway id of any entry in the post. Image URLs in the Markdown are re-hosted like the others.
+   */
+  extraTranslations?: ExtraTranslation[];
   fetch?: typeof fetch;
   /** Downloads an image URL (defaults to the SSRF-guarded public fetcher). */
   downloadImage?: (url: string) => Promise<{ bytes: Buffer; mime: string }>;
   delayMs?: number;
   log?: (msg: string) => void;
+};
+
+export type ExtraTranslation = {
+  externalId: string;
+  locale: string;
+  title: string;
+  contentMd: string;
 };
 
 export type HeadwayImportResult = {
@@ -91,8 +104,8 @@ export async function importHeadway(opts: HeadwayImportOptions): Promise<Headway
     ((url: string) =>
       fetchPublicUrl(url, 10 * 1024 * 1024).then((r) => ({ bytes: r.bytes, mime: r.mime })));
   const imageMap = new Map<string, string>();
-  const rehost = async (entries: HeadwayEntry[]) => {
-    for (const url of entries.flatMap((e) => e.images)) {
+  const rehost = async (entries: HeadwayEntry[], extraUrls: string[] = []) => {
+    for (const url of [...entries.flatMap((e) => e.images), ...extraUrls]) {
       if (imageMap.has(url)) continue;
       try {
         const file = await download(url);
@@ -107,6 +120,20 @@ export async function importHeadway(opts: HeadwayImportOptions): Promise<Headway
     }
   };
 
+  const extrasByEntry = new Map<string, ExtraTranslation[]>();
+  for (const x of opts.extraTranslations ?? []) {
+    if (!ws.locales.includes(x.locale))
+      throw new Error(`Language "${x.locale}" is not enabled in the workspace`);
+    extrasByEntry.set(x.externalId, [...(extrasByEntry.get(x.externalId) ?? []), x]);
+  }
+  const markdownImages = (md: string) =>
+    [...md.matchAll(/!\[[^\]]*\]\((https?:[^)\s]+)\)/g)].map((m) => m[1]!);
+  const withImages = (md: string) =>
+    md.replace(
+      /(!\[[^\]]*\]\()(https?:[^)\s]+)(\))/g,
+      (_, a, url, b) => `${a}${imageMap.get(url) ?? url}${b}`,
+    );
+
   for (const [i, g] of groups.entries()) {
     const entries = Object.entries(g.items);
     const existing = await Promise.all(
@@ -116,19 +143,27 @@ export async function importHeadway(opts: HeadwayImportOptions): Promise<Headway
         imported: await findImportedPost(opts.db, ws.id, sourceKey(e.account), e.id),
       })),
     );
+    const extras = entries
+      .flatMap(([, e]) => extrasByEntry.get(e.id) ?? [])
+      .filter((x) => !g.items[x.locale]);
     const todo = existing.filter((x) => !x.imported);
-    if (todo.length === 0) {
-      result.skipped++;
-      continue;
-    }
-    await rehost(todo.map((x) => x.e));
+    const already = existing.find((x) => x.imported)?.imported;
+
+    await rehost(
+      todo.map((x) => x.e),
+      extras.flatMap((x) => markdownImages(x.contentMd)),
+    );
     const translation = (e: HeadwayEntry) => ({
       title: e.title,
       contentMd: headwayToMarkdown(e, imageMap),
     });
-    const already = existing.find((x) => x.imported)?.imported;
+    const extraTranslations = Object.fromEntries(
+      extras.map((x) => [x.locale, { title: x.title, contentMd: withImages(x.contentMd) }]),
+    );
+
     if (already) {
-      // Part of the group was imported earlier (e.g. after a manual pairing): add the missing languages.
+      // Part of the group was imported earlier: add missing languages (late pairs or extra translations).
+      const post = await getPost(ctx, already.postId);
       for (const x of todo) {
         await setTranslation(ctx, already.postId, x.locale, translation(x.e));
         await recordImport(opts.db, {
@@ -140,10 +175,20 @@ export async function importHeadway(opts: HeadwayImportOptions): Promise<Headway
         });
         result.translationsAdded++;
       }
+      for (const [locale, t] of Object.entries(extraTranslations)) {
+        if (post.translations[locale]) continue;
+        await setTranslation(ctx, already.postId, locale, t);
+        result.translationsAdded++;
+      }
+      if (todo.length === 0 && Object.keys(extraTranslations).every((l) => post.translations[l]))
+        result.skipped++;
       continue;
     }
     const post = await createPost(ctx, {
-      translations: Object.fromEntries(todo.map((x) => [x.locale, translation(x.e)])),
+      translations: {
+        ...extraTranslations,
+        ...Object.fromEntries(todo.map((x) => [x.locale, translation(x.e)])),
+      },
       publish: true,
       publishedAt: new Date(groupDate(g)),
       authorId: null,
@@ -158,6 +203,7 @@ export async function importHeadway(opts: HeadwayImportOptions): Promise<Headway
       });
     }
     result.created++;
+    result.translationsAdded += Object.keys(extraTranslations).length;
     if ((i + 1) % 10 === 0) log(`  ${i + 1}/${groups.length} …`);
   }
   return result;

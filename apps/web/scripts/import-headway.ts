@@ -5,6 +5,7 @@
 //     [--pair <id>:<id> …] [--unpair <id> …]
 //
 // The first --source is the primary language. Re-running is safe: imported entries are skipped.
+import { readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 import { createDb } from "@featherlog/db";
 import { env } from "@/lib/env";
@@ -17,6 +18,8 @@ const { values } = parseArgs({
     "dry-run": { type: "boolean", default: false },
     pair: { type: "string", multiple: true },
     unpair: { type: "string", multiple: true },
+    // JSON file (or "-" for stdin): [{ "externalId": "123", "locale": "es", "title": "…", "contentMd": "…" }]
+    "extra-translations": { type: "string" },
     help: { type: "boolean", short: "h" },
   },
 });
@@ -36,6 +39,10 @@ const sources = values.source.map((s) => {
   return { account, locale };
 });
 const pairs = (values.pair ?? []).map((p) => p.split(":") as [string, string]);
+const extraFile = values["extra-translations"];
+const extraTranslations = extraFile
+  ? JSON.parse(extraFile === "-" ? readFileSync(0, "utf8") : readFileSync(extraFile, "utf8"))
+  : [];
 
 const { db, close } = createDb(env.DATABASE_URL, { max: 2 });
 try {
@@ -45,6 +52,7 @@ try {
     sources,
     dryRun: values["dry-run"],
     overrides: { pairs, unpair: values.unpair ?? [] },
+    extraTranslations,
     log: (m) => console.error(m),
   });
   console.log(result.report);

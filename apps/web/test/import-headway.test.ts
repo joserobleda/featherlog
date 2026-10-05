@@ -263,6 +263,52 @@ ${i.img ? `<p><img src="${i.img}" alt="shot"/></p>` : ""}<p>${i.body}</p></div>
     expect(again).toMatchObject({ created: 0, skipped: 2, images: 0 });
   });
 
+  it("adds extra translations (with re-hosted images) to imported posts, once", async () => {
+    const { importHeadway } = await import("../src/server/import/run");
+    const sharp = (await import("sharp")).default;
+    const png = await sharp({ create: { width: 4, height: 4, channels: 3, background: "#ff0000" } })
+      .png()
+      .toBuffer();
+    const extra = [
+      {
+        externalId: "12",
+        locale: "es",
+        title: "Solo en inglés (traducida)",
+        contentMd: "[New]\n\n![shot](https://cloud.headwayapp.co/i/big/extra.png)\n\nTraducción.",
+      },
+    ];
+    const base = {
+      db: t.db,
+      workspace: wsSlug,
+      sources: [
+        { account: "acme-en", locale: "en" },
+        { account: "acme-es", locale: "es" },
+      ],
+      fetch: fakeFetch,
+      delayMs: 0,
+      downloadImage: async () => ({ bytes: png, mime: "image/png" }),
+      extraTranslations: extra,
+    };
+    const res = await importHeadway(base);
+    expect(res).toMatchObject({ created: 0, translationsAdded: 1, images: 1 });
+    const { findWorkspaceBySlug, listPosts } = await import("@featherlog/core");
+    const ws = (await findWorkspaceBySlug(t.db, wsSlug))!.workspace;
+    const ctx = {
+      db: t.db,
+      workspaceId: ws.id,
+      actor: { kind: "user" as const, userId: "u1", role: "owner" as const },
+      via: "panel" as const,
+    };
+    const post = (await listPosts(ctx, { limit: 10 })).items.find(
+      (p) => p.translations.en?.title === "Only in English",
+    )!;
+    expect(post.translations.es?.title).toBe("Solo en inglés (traducida)");
+    expect(post.translations.es?.contentMd).toContain("http://localhost:3100/uploads/images/");
+    expect(post.translations.es?.contentMd).not.toContain("cloud.headwayapp.co");
+    const again = await importHeadway(base);
+    expect(again).toMatchObject({ created: 0, translationsAdded: 0 });
+  });
+
   it("refuses workspaces without the needed languages", async () => {
     const { importHeadway } = await import("../src/server/import/run");
     await expect(
