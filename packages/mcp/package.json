@@ -1,27 +1,55 @@
 {
   "name": "@featherlog/mcp",
   "version": "0.1.0",
-  "description": "Featherlog MCP server (stdio) — manage your changelog from AI agents",
+  "description": "Local (stdio) MCP server for Featherlog — bridges MCP clients to your changelog’s remote MCP endpoint with a workspace API key",
+  "keywords": [
+    "featherlog",
+    "changelog",
+    "mcp",
+    "model-context-protocol",
+    "mcp-server",
+    "stdio",
+    "ai",
+    "claude",
+    "cursor",
+    "release-notes"
+  ],
+  "homepage": "https://github.com/joserobleda/featherlog/tree/main/packages/mcp#readme",
+  "bugs": "https://github.com/joserobleda/featherlog/issues",
+  "repository": {
+    "type": "git",
+    "url": "github:joserobleda/featherlog",
+    "directory": "packages/mcp"
+  },
   "license": "AGPL-3.0-only",
   "type": "module",
   "bin": {
     "featherlog-mcp": "./dist/cli.js"
   },
-  "files": [
-    "dist"
-  ],
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "build": "node build.mjs",
-    "typecheck": "tsc --noEmit -p ."
+    "typecheck": "tsc --noEmit -p .",
+    "prepublishOnly": "node build.mjs"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.32.0",
-    "zod": "^4.6.5"
+    "@modelcontextprotocol/client": "^2.3.0",
+    "@modelcontextprotocol/server": "^2.3.0"
   },
   "devDependencies": {
-    "esbuild": "^0.28.2"
+    "esbuild": "^0.28.2",
+    "zod": "^4.6.5"
   }
 }

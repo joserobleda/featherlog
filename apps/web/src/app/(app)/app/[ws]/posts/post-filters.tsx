@@ -29,12 +29,12 @@ export function PostFilters({
     router.replace(s ? `${pathname}?${s}` : pathname);
   };
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: debounce only on the search text
   useEffect(() => {
     const id = setTimeout(() => {
       if ((params.get("q") ?? "") !== q) update({ q });
     }, 300);
     return () => clearTimeout(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
 
   const langValue = params.get("missing")

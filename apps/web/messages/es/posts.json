@@ -2,7 +2,12 @@
   "title": "Entradas",
   "description": "Escribe, programa y publica novedades de producto.",
   "new": "Nueva entrada",
-  "tabs": { "all": "Todas", "draft": "Borradores", "scheduled": "Programadas", "published": "Publicadas" },
+  "tabs": {
+    "all": "Todas",
+    "draft": "Borradores",
+    "scheduled": "Programadas",
+    "published": "Publicadas"
+  },
   "status": { "draft": "Borrador", "scheduled": "Programada", "published": "Publicada" },
   "searchPlaceholder": "Buscar entradas…",
   "allLanguages": "Todos los idiomas",

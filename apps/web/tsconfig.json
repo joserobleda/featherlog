@@ -6,6 +6,14 @@
     "allowJs": false,
     "incremental": true
   },
-  "include": ["next-env.d.ts", "src", "scripts", "test", "worker.ts", ".next/types/**/*.ts", "*.ts"],
+  "include": [
+    "next-env.d.ts",
+    "src",
+    "scripts",
+    "test",
+    "worker.ts",
+    ".next/types/**/*.ts",
+    "*.ts"
+  ],
   "exclude": ["node_modules", ".next"]
 }

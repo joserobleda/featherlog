@@ -7,7 +7,12 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const nextConfig: NextConfig = {
   output: "standalone",
   outputFileTracingRoot: fileURLToPath(new URL("../..", import.meta.url)),
-  transpilePackages: ["@featherlog/core", "@featherlog/db", "@featherlog/markdown", "@featherlog/widget"],
+  transpilePackages: [
+    "@featherlog/core",
+    "@featherlog/db",
+    "@featherlog/markdown",
+    "@featherlog/widget",
+  ],
   serverExternalPackages: ["sharp", "pg-boss", "postgres", "@electric-sql/pglite"],
   poweredByHeader: false,
   typedRoutes: false,
@@ -23,7 +28,9 @@ const nextConfig: NextConfig = {
       },
       {
         source: "/widget/:file*",
-        headers: [{ key: "Cache-Control", value: "public, max-age=3600, stale-while-revalidate=86400" }],
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=3600, stale-while-revalidate=86400" },
+        ],
       },
       {
         source: "/app/:path*",

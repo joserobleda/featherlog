@@ -66,6 +66,7 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(function M
   onChangeRef.current = onChange;
   onUploadRef.current = onUploadFiles;
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: the editor is created once; value/placeholder updates are handled separately
   useEffect(() => {
     if (!host.current) return;
     const images = (list: FileList | null | undefined) =>
@@ -87,9 +88,27 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(function M
             spellcheck: "true",
           }),
           keymap.of([
-            { key: "Mod-b", run: (): boolean => (wrapIn(v, "**", "**", "bold"), true) },
-            { key: "Mod-i", run: (): boolean => (wrapIn(v, "_", "_", "italic"), true) },
-            { key: "Mod-k", run: (): boolean => (wrapIn(v, "[", "](https://)", "link"), true) },
+            {
+              key: "Mod-b",
+              run: (): boolean => {
+                wrapIn(v, "**", "**", "bold");
+                return true;
+              },
+            },
+            {
+              key: "Mod-i",
+              run: (): boolean => {
+                wrapIn(v, "_", "_", "italic");
+                return true;
+              },
+            },
+            {
+              key: "Mod-k",
+              run: (): boolean => {
+                wrapIn(v, "[", "](https://)", "link");
+                return true;
+              },
+            },
             ...defaultKeymap,
             ...historyKeymap,
             indentWithTab,
@@ -127,7 +146,6 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(function M
       v.destroy();
       view.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // External value changes (e.g. switching language tab) replace the document.

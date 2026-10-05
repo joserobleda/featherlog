@@ -133,6 +133,7 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
     }));
 
   /* ---------- live preview ---------- */
+  // biome-ignore lint/correctness/useExhaustiveDependencies: catName only depends on locale, which is listed
   useEffect(() => {
     let cancelled = false;
     const id = setTimeout(async () => {
@@ -146,7 +147,6 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
       cancelled = true;
       clearTimeout(id);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current.contentMd, locale, categories]);
 
   /* ---------- saving ---------- */
@@ -208,7 +208,7 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
       }
       return true;
     },
-    [buildPayload, snapshot, postId, workspace.slug, t, router],
+    [buildPayload, snapshot, workspace.slug, t, router],
   );
 
   const runSave = (publish: boolean, message: string) =>
@@ -239,6 +239,7 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
     return () => window.removeEventListener("beforeunload", onBeforeUnload);
   }, [dirty]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-binds every render so the shortcut sees fresh state
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === "s") {
@@ -275,6 +276,7 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
   );
 
   /* ---------- categories present in the current translation ---------- */
+  // biome-ignore lint/correctness/useExhaustiveDependencies: catName only depends on locale, which is listed
   const presentCategories = useMemo(() => {
     const names = new Set<string>();
     for (const line of current.contentMd.split("\n")) {
@@ -282,7 +284,6 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
       if (m) for (const x of m[1]!.matchAll(/\[([^\]]+)\]/g)) names.add(x[1]!.trim().toLowerCase());
     }
     return categories.filter((c) => names.has(catName(c).toLowerCase()));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [current.contentMd, categories, locale]);
 
   const removeCategory = (name: string) => {
@@ -612,6 +613,7 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
           {/* Footer: author, date, publish */}
           <footer className="grid gap-3 border-t border-border bg-muted/30 px-5 py-4">
             <div className="grid grid-cols-2 gap-3">
+              {/* biome-ignore lint/a11y/noLabelWithoutControl: wraps the Select component's <select> */}
               <label className="grid gap-1 text-xs font-medium text-fg-muted">
                 {t("author")}
                 <Select
