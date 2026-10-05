@@ -112,6 +112,7 @@ Before the first e2e run, install Chromium with `pnpm exec playwright install ch
 ## Documentation
 
 - [Self-hosting](docs/self-hosting.md) and the [configuration reference](docs/configuration.md)
+- [Deploy on Coolify](docs/deploy-coolify.md) (recommended when you host several tools on one server)
 - [Reference deployment on DigitalOcean](docs/deploy-digitalocean.md)
 - [Widget](docs/widget.md)
 - [Markdown syntax](docs/markdown.md)

@@ -1,0 +1,52 @@
+# Featherlog on Coolify (https://coolify.io): New Resource → Docker Compose → this file
+# (or "Docker Compose Empty" and paste it). Coolify generates the URL, database password and
+# auth secret; set the app's domain in the "app" service (e.g. https://changelog.example.com:3000).
+services:
+  app:
+    image: ghcr.io/joserobleda/featherlog:${FEATHERLOG_TAG:-latest}
+    environment:
+      - SERVICE_URL_APP_3000
+      - APP_URL=${SERVICE_URL_APP}
+      - DATABASE_URL=postgres://${SERVICE_USER_POSTGRES}:${SERVICE_PASSWORD_POSTGRES}@postgres:5432/featherlog
+      - AUTH_SECRET=${SERVICE_PASSWORD_64_AUTH}
+      - SIGNUP_MODE=${SIGNUP_MODE:-invite}
+      # Company instance: verified addresses from these domains can sign up and auto-join a workspace
+      - ALLOWED_EMAIL_DOMAINS=${ALLOWED_EMAIL_DOMAINS:-}
+      - AUTO_JOIN_WORKSPACE=${AUTO_JOIN_WORKSPACE:-}
+      # Optional: Google sign-in (redirect URI: <APP_URL>/api/auth/callback/google)
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      # Optional: email (without it, invitations are shared as links)
+      - SMTP_URL=${SMTP_URL:-}
+      - MAIL_FROM=${MAIL_FROM:-Featherlog <no-reply@localhost>}
+      - WORKER_MODE=inline
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    volumes:
+      - featherlog-uploads:/data/uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/healthz >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 40s
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      - POSTGRES_USER=${SERVICE_USER_POSTGRES}
+      - POSTGRES_PASSWORD=${SERVICE_PASSWORD_POSTGRES}
+      - POSTGRES_DB=featherlog
+    volumes:
+      - featherlog-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d featherlog"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  featherlog-uploads:
+  featherlog-pgdata:
