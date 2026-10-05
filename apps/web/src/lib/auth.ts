@@ -17,11 +17,29 @@ import { sendMailSafe } from "./mailer";
 /**
  * Sign-up policy:
  *  - the very first user can always sign up (they become the instance admin by creating a workspace);
- *  - `open`: anyone; `invite`: only emails with a pending invitation; `closed`: nobody else.
+ *  - `open`: anyone; `invite`: only emails with a pending invitation; `closed`: nobody else;
+ *  - emails from ALLOWED_EMAIL_DOMAINS can always sign up.
  */
+
+/** New users from an allowed domain join AUTO_JOIN_WORKSPACE as editors (zero-touch onboarding). */
+async function autoJoin(userId: string, email: string) {
+  if (!env.AUTO_JOIN_WORKSPACE || !env.allowedEmailDomains.includes(domainOf(email))) return;
+  const [ws] = await db
+    .select({ id: schema.workspaces.id })
+    .from(schema.workspaces)
+    .where(eq(schema.workspaces.slug, env.AUTO_JOIN_WORKSPACE));
+  if (!ws) return;
+  await db
+    .insert(schema.memberships)
+    .values({ workspaceId: ws.id, userId, role: "editor" })
+    .onConflictDoNothing();
+}
+const domainOf = (email: string) => email.split("@").pop()?.toLowerCase() ?? "";
+
 async function assertSignupAllowed(email: string, inviteToken?: string | null) {
   const [{ value: users } = { value: 0 }] = await db.select({ value: count() }).from(schema.user);
   if (users === 0 || env.SIGNUP_MODE === "open") return;
+  if (env.allowedEmailDomains.includes(domainOf(email))) return;
   if (env.SIGNUP_MODE === "invite") {
     if (inviteToken) {
       const inv = await findInvitation(db, inviteToken);
@@ -65,13 +83,14 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     minPasswordLength: 8,
-    requireEmailVerification: env.NODE_ENV === "production",
+    // Verification needs email; without SMTP, accounts are trusted (use SIGNUP_MODE/domains to restrict).
+    requireEmailVerification: env.NODE_ENV === "production" && env.emailEnabled,
     sendResetPassword: async ({ user, url }) => {
       await sendMailSafe(resetPasswordEmail(user.email, url));
     },
   },
   emailVerification: {
-    sendOnSignUp: true,
+    sendOnSignUp: env.emailEnabled,
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }) => {
       await sendMailSafe(verifyEmail(user.email, url));
@@ -92,12 +111,16 @@ export const auth = betterAuth({
           await assertSignupAllowed(user.email, inviteToken);
           return { data: user };
         },
+        after: async (user) => {
+          await autoJoin(user.id, user.email);
+        },
       },
     },
   },
   plugins: [
     magicLink({
       expiresIn: 600,
+      // Hidden in the UI when SMTP isn't configured.
       sendMagicLink: async ({ email, url }) => {
         await sendMailSafe(magicLinkEmail(email, url));
       },

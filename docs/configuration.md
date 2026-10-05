@@ -18,6 +18,8 @@ Boolean variables accept `true`/`1` (on) and `false`/`0`/empty (off).
 | `PUBLIC_URL` | `APP_URL` | Host for the public changelog pages (`/<slug>`), RSS and sitemaps. See [separate hosts](self-hosting.md#separate-hosts-for-public-pages-and-widget). |
 | `WIDGET_URL` | `APP_URL` | Host for `widget.js`, the widget iframe (`/_widget/…`) and the widget JSON (`/api/widget/…`). |
 | `SIGNUP_MODE` | `open` | `open`: anyone can sign up. `invite`: only email addresses with an invitation. `closed`: nobody. The first user can always sign up. |
+| `ALLOWED_EMAIL_DOMAINS` | — | Comma-separated email domains that can always sign up, whatever `SIGNUP_MODE` says (e.g. your company domain). Combine with Google sign-in for a passwordless company instance. |
+| `AUTO_JOIN_WORKSPACE` | — | Slug of a workspace that new users from `ALLOWED_EMAIL_DOMAINS` join automatically as editors. |
 | `LOG_LEVEL` | `info` | `fatal`, `error`, `warn`, `info`, `debug` or `trace` (pino). |
 
 ## Storage
@@ -37,7 +39,7 @@ Boolean variables accept `true`/`1` (on) and `false`/`0`/empty (off).
 
 | Variable | Default | Description |
 | --- | --- | --- |
-| `SMTP_URL` | `smtp://localhost:1025` | SMTP connection URL. Use `smtps://user:pass@host:465` for implicit TLS or `smtp://user:pass@host:587` for STARTTLS. The default points at Mailpit from `pnpm services`. |
+| `SMTP_URL` | — | Optional SMTP connection URL (`smtps://user:pass@host:465` or `smtp://user:pass@host:587`). Without it, emails are skipped: invitations are shared as links from the dashboard, email verification is off, and magic-link sign-in / password reset are hidden. In development, `apps/web/.env.example` points it at Mailpit. |
 | `MAIL_FROM` | `Featherlog <no-reply@localhost>` | Sender for verification emails, magic links, password resets and invitations. |
 
 ## Sign-in
@@ -77,12 +79,12 @@ These are read by `docker/compose.yml` and the scripts in `deploy/`, not by the 
 | `APP_DOMAIN` | `localhost` | Domain the bundled Caddy serves and gets a certificate for. Use the host of `APP_URL`. |
 | `ACME_EMAIL` | — | Email for Let's Encrypt notices (Caddy). |
 | `USE_CADDY` | — | `1` makes `deploy/deploy.sh` start Compose with `--profile caddy`. Set it in `docker/.env` or in the environment. |
-| `BACKUP_S3_BUCKET` | — | Bucket for `deploy/backup.sh`. While it is empty, backups are skipped. |
-| `BACKUP_S3_ENDPOINT` | — | S3 endpoint for backups (required once a bucket is set). |
+| `BACKUP_KEEP_DAYS` | `14` | Days of compressed dumps `deploy/backup.sh` keeps on the server (`/opt/featherlog/backups`). |
+| `BACKUP_AGE_RECIPIENT` | — | Optional [age](https://age-encryption.org) public key (`age1…`); dumps are encrypted to it. Keep the private key off the server. |
+| `BACKUP_S3_BUCKET` | — | Optional bucket for an off-site copy of each dump. |
+| `BACKUP_S3_ENDPOINT` | — | S3 endpoint for the backup bucket. |
 | `BACKUP_S3_ACCESS_KEY_ID` | — | Credentials for the backup bucket. |
 | `BACKUP_S3_SECRET_ACCESS_KEY` | — | |
-| `BACKUP_AGE_RECIPIENT` | — | [age](https://age-encryption.org) public key (`age1…`) that backups are encrypted to. Keep the private key off the server. |
-| `BACKUP_RETENTION_DAYS` | `30` | For information only. Set the actual retention with a lifecycle rule on the bucket. |
 
 ## Development and tests
 

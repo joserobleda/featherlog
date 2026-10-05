@@ -5,6 +5,7 @@ import { useFormatter, useTranslations } from "next-intl";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/settings/confirm-dialog";
+import { CopyField } from "@/components/settings/copy-field";
 import { useActionRunner } from "@/components/settings/use-action";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -93,6 +94,7 @@ function InviteForm({ wsSlug, myRole }: { wsSlug: string; myRole: Role }) {
   const t = useTranslations("settings.team");
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<Role>("editor");
+  const [link, setLink] = useState<{ email: string; url: string; emailed: boolean } | null>(null);
   const { pending, errors, run } = useActionRunner();
   const roles: Role[] = myRole === "owner" ? ["editor", "admin", "owner"] : ["editor", "admin"];
   return (
@@ -106,7 +108,12 @@ function InviteForm({ wsSlug, myRole }: { wsSlug: string; myRole: Role }) {
             e.preventDefault();
             run(() => inviteAction(wsSlug, { email: email.trim(), role }), {
               onSuccess: (d) => {
-                toast.success(t("invited", { email: d.email }));
+                toast.success(
+                  d.emailed
+                    ? t("invited", { email: d.email })
+                    : t("inviteLinkReady", { email: d.email }),
+                );
+                setLink({ email: d.email, url: d.url, emailed: d.emailed });
                 setEmail("");
               },
             });
@@ -142,6 +149,16 @@ function InviteForm({ wsSlug, myRole }: { wsSlug: string; myRole: Role }) {
             {t("sendInvite")}
           </Button>
         </form>
+        {link ? (
+          <div className="mt-4 grid gap-1.5 rounded-lg bg-muted/60 p-3 text-sm">
+            <p className="text-fg-muted">
+              {link.emailed
+                ? t("inviteLinkEmailed", { email: link.email })
+                : t("inviteLinkShare", { email: link.email })}
+            </p>
+            <CopyField value={link.url} aria-label={t("inviteLink")} />
+          </div>
+        ) : null}
       </CardBody>
     </Card>
   );
@@ -317,9 +334,15 @@ function InvitationItem({
           : await revokeInvitationAction(wsSlug, inv.id);
       setBusy(null);
       if (!res.ok) return void toast.error(res.error);
-      toast.success(
-        kind === "resend" ? t("resent", { email: inv.email }) : t("revoked", { email: inv.email }),
-      );
+      if (kind === "resend" && res.data && "url" in res.data) {
+        const data = res.data as { url: string; emailed: boolean };
+        await navigator.clipboard?.writeText(data.url).catch(() => {});
+        toast.success(
+          data.emailed ? t("resent", { email: inv.email }) : t("linkCopied", { email: inv.email }),
+        );
+        return;
+      }
+      toast.success(t("revoked", { email: inv.email }));
     });
   };
 

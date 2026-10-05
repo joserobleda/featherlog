@@ -35,6 +35,9 @@ try {
     { name, scopes },
   );
   console.log(secret);
+} catch (err) {
+  console.error(`Error: ${err instanceof Error ? err.message : String(err)}`);
+  process.exitCode = 1;
 } finally {
   await close();
 }

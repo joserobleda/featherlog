@@ -16,6 +16,10 @@ const schema = z.object({
   PUBLIC_URL: z.url().optional(),
   WIDGET_URL: z.url().optional(),
   SIGNUP_MODE: z.enum(["open", "invite", "closed"]).default("open"),
+  /** Comma-separated email domains that may always sign up (e.g. your company's Google Workspace). */
+  ALLOWED_EMAIL_DOMAINS: z.string().optional(),
+  /** Slug of a workspace that new users from ALLOWED_EMAIL_DOMAINS join automatically (as editors). */
+  AUTO_JOIN_WORKSPACE: z.string().optional(),
   STORAGE_DRIVER: z.enum(["local", "s3"]).default("local"),
   UPLOADS_DIR: z.string().default("./uploads"),
   S3_ENDPOINT: z.string().optional(),
@@ -24,7 +28,8 @@ const schema = z.object({
   S3_ACCESS_KEY_ID: z.string().optional(),
   S3_SECRET_ACCESS_KEY: z.string().optional(),
   S3_PUBLIC_URL: z.string().optional(),
-  SMTP_URL: z.string().default("smtp://localhost:1025"),
+  /** Optional: without it, invitations are shared as links and email-based sign-in is disabled. */
+  SMTP_URL: z.string().optional(),
   MAIL_FROM: z.string().default("Featherlog <no-reply@localhost>"),
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
@@ -61,6 +66,11 @@ function load() {
     PUBLIC_URL: strip(env.PUBLIC_URL ?? env.APP_URL),
     WIDGET_URL: strip(env.WIDGET_URL ?? env.APP_URL),
     googleEnabled: Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET),
+    emailEnabled: Boolean(env.SMTP_URL),
+    allowedEmailDomains: (env.ALLOWED_EMAIL_DOMAINS ?? "")
+      .split(",")
+      .map((d) => d.trim().toLowerCase().replace(/^@/, ""))
+      .filter(Boolean),
   };
 }
 

@@ -40,7 +40,7 @@ export default async function SignupPage({
         googleEnabled={env.googleEnabled}
         defaultEmail={email}
         inviteToken={invite}
-        requireVerification={env.NODE_ENV === "production"}
+        requireVerification={env.NODE_ENV === "production" && env.emailEnabled}
       />
     </AuthShell>
   );

@@ -12,6 +12,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { runAction } from "@/lib/actions";
 import { invitationEmail } from "@/lib/emails";
+import { env } from "@/lib/env";
 import { sendMailSafe } from "@/lib/mailer";
 import { getWorkspaceContext, type WorkspaceContext } from "@/lib/session";
 import { appUrl } from "@/lib/urls";
@@ -22,22 +23,22 @@ async function invite(wc: WorkspaceContext, email: string, role: Role) {
   const { token, invitation } = await inviteMember(wc.ctx, { email, role });
   const inviter =
     (wc.session.user as { displayName?: string | null }).displayName || wc.session.user.name;
-  await sendMailSafe(
-    invitationEmail(invitation.email, {
-      workspace: wc.workspace.name,
-      inviter,
-      url: appUrl(`/invite/${token}`),
-    }),
-  );
-  return invitation;
+  const url = appUrl(`/invite/${token}`);
+  // Without SMTP the link is shown in the dashboard to share by hand.
+  if (env.emailEnabled) {
+    await sendMailSafe(
+      invitationEmail(invitation.email, { workspace: wc.workspace.name, inviter, url }),
+    );
+  }
+  return { invitation, url, emailed: env.emailEnabled };
 }
 
 export async function inviteAction(wsSlug: string, input: { email: string; role: Role }) {
   const wc = await getWorkspaceContext(wsSlug);
   return runAction(async () => {
-    const inv = await invite(wc, input.email, input.role);
+    const { invitation, url, emailed } = await invite(wc, input.email, input.role);
     revalidatePath(path(wc.workspace.slug));
-    return { email: inv.email };
+    return { email: invitation.email, url, emailed };
   });
 }
 
@@ -48,9 +49,9 @@ export async function resendInvitationAction(wsSlug: string, invitationId: strin
     const inv = pending.find((i) => i.id === invitationId);
     if (!inv) throw new Error("Invitation not found");
     // Re-inviting revokes the old token and emails a fresh one.
-    await invite(wc, inv.email, inv.role as Role);
+    const { url, emailed } = await invite(wc, inv.email, inv.role as Role);
     revalidatePath(path(wc.workspace.slug));
-    return { email: inv.email };
+    return { email: inv.email, url, emailed };
   });
 }
 

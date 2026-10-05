@@ -77,7 +77,7 @@ Featherlog runs an MCP server at **`<APP_URL>/mcp`**. By default, agents create 
 - **Other clients that use an API key**: send `Authorization: Bearer fl_live_…`. Create keys in **Settings → API & MCP**.
 - **Clients that only support local (stdio) servers**:
   ```sh
-  npx -y @featherlog/mcp --url https://changelog.example.com --key fl_live_…
+  node packages/mcp/dist/cli.js --url https://changelog.example.com --key fl_live_…   # after pnpm --filter @featherlog/mcp build
   ```
 
 Details, the full tool list and example prompts: [docs/mcp.md](docs/mcp.md). REST API: [docs/api.md](docs/api.md).
@@ -90,7 +90,7 @@ packages/core/       Domain logic (posts, categories, workspaces, members, API k
 packages/db/         Drizzle schema, SQL migrations, test database helpers
 packages/markdown/   Markdown → sanitized HTML (categories, video embeds, image sizing, highlighting)
 packages/widget/     Embeddable widget: loader (widget.js) and the iframe app
-packages/mcp/        @featherlog/mcp, a stdio bridge to the remote MCP endpoint (published to npm)
+packages/mcp/        @featherlog/mcp, an optional stdio bridge to the remote MCP endpoint (not published to npm yet)
 docker/              Dockerfile entrypoint and Compose files (production and dev services)
 deploy/              Server bootstrap, deploy, backup scripts, Caddyfile, .env template
 docs/                Documentation and ADRs
@@ -112,7 +112,7 @@ Before the first e2e run, install Chromium with `pnpm exec playwright install ch
 ## Documentation
 
 - [Self-hosting](docs/self-hosting.md) and the [configuration reference](docs/configuration.md)
-- [Reference deployment on Hetzner](docs/deploy-hetzner.md)
+- [Reference deployment on DigitalOcean](docs/deploy-digitalocean.md)
 - [Widget](docs/widget.md)
 - [Markdown syntax](docs/markdown.md)
 - [REST API](docs/api.md)

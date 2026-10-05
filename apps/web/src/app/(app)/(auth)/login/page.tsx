@@ -37,7 +37,7 @@ export default async function LoginPage({
         ) : null
       }
     >
-      <LoginForm next={target} googleEnabled={env.googleEnabled} />
+      <LoginForm next={target} googleEnabled={env.googleEnabled} emailEnabled={env.emailEnabled} />
     </AuthShell>
   );
 }

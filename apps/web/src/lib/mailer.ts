@@ -9,14 +9,21 @@ export interface Mailer {
 }
 
 class SmtpMailer implements Mailer {
-  private transport = nodemailer.createTransport(env.SMTP_URL);
+  private transport = nodemailer.createTransport(env.SMTP_URL!);
   async send(mail: Mail) {
     await this.transport.sendMail({ from: env.MAIL_FROM, ...mail });
     logger.info({ to: mail.to, subject: mail.subject }, "email sent");
   }
 }
 
-export const mailer: Mailer = new SmtpMailer();
+/** Used when SMTP_URL isn't set: emails are skipped (and logged) instead of failing. */
+class NoopMailer implements Mailer {
+  async send(mail: Mail) {
+    logger.info({ to: mail.to, subject: mail.subject }, "email skipped (SMTP_URL not configured)");
+  }
+}
+
+export const mailer: Mailer = env.emailEnabled ? new SmtpMailer() : new NoopMailer();
 
 /** Sends without throwing (auth flows should not fail because SMTP is down); errors are logged. */
 export async function sendMailSafe(mail: Mail) {

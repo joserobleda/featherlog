@@ -2,13 +2,13 @@
 
 Featherlog ships as **one Docker image** (`ghcr.io/joserobleda/featherlog`). The same image runs the web server and, optionally, a background worker. You also need Postgres. [`docker/compose.yml`](../docker/compose.yml) brings everything up, with an optional Caddy for automatic HTTPS.
 
-For the exact production setup we use (Hetzner, Cloudflare, R2, GitHub Actions), see [deploy-hetzner.md](deploy-hetzner.md).
+For our minimal production setup (one DigitalOcean Droplet, no other services), see [deploy-digitalocean.md](deploy-digitalocean.md).
 
 ## Requirements
 
 - A Linux server with Docker Engine and the Compose plugin. 1 vCPU and 1 GB of RAM is enough for most changelogs. Images are published for `linux/amd64` and `linux/arm64`.
 - A domain or subdomain pointing at the server, for example `changelog.example.com`.
-- An SMTP provider (Resend, Postmark, SES, Mailgun…) for sign-up verification, magic links and invitations.
+- Optional: an SMTP provider (Resend, Postmark, SES, Mailgun…) for verification, magic links, password resets and invitation emails. Without one, invitations are shared as links from the dashboard.
 - Optional: an S3-compatible bucket for uploaded images.
 
 ## Quick setup with Docker Compose
@@ -137,7 +137,7 @@ S3_PUBLIC_URL=https://files.example.com                      # optional
 
 ## Email (SMTP)
 
-Set `SMTP_URL` and `MAIL_FROM`. Any SMTP provider works:
+Email is optional. Without `SMTP_URL`, Featherlog skips emails: invitations show a link to share by hand, email verification is off (restrict sign-ups with `SIGNUP_MODE` / `ALLOWED_EMAIL_DOMAINS`), and magic-link sign-in and password-reset emails are hidden. To enable it, set `SMTP_URL` and `MAIL_FROM`. Any SMTP provider works:
 
 ```sh
 SMTP_URL=smtps://resend:re_xxx@smtp.resend.com:465
@@ -224,40 +224,25 @@ deploy/deploy.sh ghcr.io/joserobleda/featherlog:0.2.0
 
 ## Backups
 
-[`deploy/backup.sh`](../deploy/backup.sh) dumps Postgres (`pg_dump --clean --if-exists`), compresses it, encrypts it with [age](https://age-encryption.org) and uploads it to any S3-compatible bucket. It reads its settings from `docker/.env` and expects the `/opt/featherlog` layout: `deploy/`, `docker/` and `backups/` side by side. In a repository checkout, run `mkdir backups` first.
+[`deploy/backup.sh`](../deploy/backup.sh) runs daily (cron installed by `bootstrap.sh`) and needs no external service:
 
-1. Create a key pair **on your own machine**, not on the server:
-   ```sh
-   age-keygen -o featherlog-backup.key   # prints the public key (age1…)
-   ```
-   Keep `featherlog-backup.key` somewhere safe, such as a password manager. Without it, backups can't be decrypted.
-2. Add to `docker/.env`:
-   ```sh
-   BACKUP_S3_BUCKET=featherlog-backups
-   BACKUP_S3_ENDPOINT=https://<account-id>.r2.cloudflarestorage.com
-   BACKUP_S3_ACCESS_KEY_ID=…
-   BACKUP_S3_SECRET_ACCESS_KEY=…
-   BACKUP_AGE_RECIPIENT=age1…
-   ```
-3. Install `age` on the server (`apt-get install age`) and run `deploy/backup.sh` once to test it. `bootstrap.sh` installs a daily cron job at 03:23 (`/etc/cron.d/featherlog-backup`).
-4. Add a **lifecycle rule** on the bucket to delete objects after N days. The script only prunes local copies, which it keeps for 3 days in `backups/`.
+- It dumps Postgres (`pg_dump --clean --if-exists`), compresses it and keeps the last `BACKUP_KEEP_DAYS` (default 14) in `/opt/featherlog/backups`.
+- Pair it with your provider's server backups or snapshots (e.g. DigitalOcean Droplet backups), which also cover the `uploads` volume.
+- Optional: set `BACKUP_AGE_RECIPIENT` to encrypt dumps with [age](https://age-encryption.org) (create the key pair on your own machine with `age-keygen`; `bootstrap.sh` installs `age`), and `BACKUP_S3_*` to upload each dump to an S3-compatible bucket (DigitalOcean Spaces, R2, S3…). Add a lifecycle rule on the bucket for remote retention.
 
-Backups are stored in the bucket as `postgres/featherlog-<timestamp>.sql.gz.age`.
-
-> The script backs up **Postgres only**. If you use `STORAGE_DRIVER=local`, back up the `uploads` volume separately, or switch to S3/R2. Bucket storage is already durable.
+Run `deploy/backup.sh` once by hand to check it works.
 
 ### Restore
 
 ```sh
 cd docker
 docker compose stop app
-age -d -i featherlog-backup.key featherlog-20261005T032300Z.sql.gz.age \
-  | gunzip \
+gunzip -c ../backups/featherlog-20261005T032300Z.sql.gz \
   | docker compose exec -T postgres psql -U featherlog -d featherlog -v ON_ERROR_STOP=1
 docker compose start app
 ```
 
-The dump includes `DROP … IF EXISTS` statements, so it restores over an existing database. Decrypt on a machine that has the private key, then copy the plain `.sql.gz` over if needed. In the reference setup, the [`backup-check.yml`](../.github/workflows/backup-check.yml) workflow restores the latest backup into a throwaway database every week.
+The dump includes `DROP … IF EXISTS` statements, so it restores over an existing database. Encrypted dumps (`.sql.gz.age`) are decrypted first with `age -d -i featherlog-backup.key <file> | gunzip | …`, on a machine that has the private key. In the reference setup, the [`backup-check.yml`](../.github/workflows/backup-check.yml) workflow restores the latest backup into a throwaway database every week.
 
 ## Health check
 

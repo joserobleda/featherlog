@@ -218,7 +218,12 @@
       "ownerDescription": "Full control, including deleting the workspace and transferring ownership.",
       "adminDescription": "Manages settings, categories, the widget, API keys and members. Can edit any post.",
       "editorDescription": "Writes, edits and publishes posts. Can't change settings or manage the team."
-    }
+    },
+    "inviteLinkReady": "Invitation created for {email}",
+    "inviteLinkEmailed": "We emailed this link to {email}. You can also share it directly:",
+    "inviteLinkShare": "Email isn’t configured on this server — send this link to {email}:",
+    "inviteLink": "Invitation link",
+    "linkCopied": "New invitation link for {email} copied to the clipboard"
   },
   "api": {
     "title": "API & MCP",

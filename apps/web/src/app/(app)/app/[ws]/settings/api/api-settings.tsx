@@ -158,11 +158,6 @@ export function ApiSettings(props: {
               )}
             />
           </div>
-          <div className="grid min-w-0 grid-cols-1 gap-1.5">
-            <p className="font-medium">{t("mcp.stdioTitle")}</p>
-            <p className="text-fg-muted">{t("mcp.stdio")}</p>
-            <CodeBlock code={`npx -y @featherlog/mcp --url ${props.appUrl} --key fl_live_…`} />
-          </div>
         </CardBody>
       </Card>
 

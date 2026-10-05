@@ -28,7 +28,16 @@ export function GoogleButton({ next }: { next: string }) {
   );
 }
 
-export function LoginForm({ next, googleEnabled }: { next: string; googleEnabled: boolean }) {
+export function LoginForm({
+  next,
+  googleEnabled,
+  emailEnabled = true,
+}: {
+  next: string;
+  googleEnabled: boolean;
+  /** Magic links and password resets need SMTP. */
+  emailEnabled?: boolean;
+}) {
   const t = useTranslations("auth");
   const router = useRouter();
   const [email, setEmail] = useState("");
@@ -99,9 +108,11 @@ export function LoginForm({ next, googleEnabled }: { next: string; googleEnabled
             <label htmlFor="password" className="text-sm font-medium">
               {t("password")}
             </label>
-            <Link href="/forgot-password" className="text-xs text-brand hover:underline">
-              {t("forgot")}
-            </Link>
+            {emailEnabled ? (
+              <Link href="/forgot-password" className="text-xs text-brand hover:underline">
+                {t("forgot")}
+              </Link>
+            ) : null}
           </div>
           <Input
             id="password"
@@ -124,9 +135,16 @@ export function LoginForm({ next, googleEnabled }: { next: string; googleEnabled
         <Button type="submit" loading={loading === "password"} disabled={!password}>
           {t("signIn")}
         </Button>
-        <Button type="button" variant="ghost" onClick={sendMagicLink} loading={loading === "magic"}>
-          <Mail /> {t("magicLink")}
-        </Button>
+        {emailEnabled ? (
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={sendMagicLink}
+            loading={loading === "magic"}
+          >
+            <Mail /> {t("magicLink")}
+          </Button>
+        ) : null}
       </form>
     </div>
   );

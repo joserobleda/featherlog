@@ -91,7 +91,7 @@ Custom connectors need developer mode: **Settings → Apps & Connectors → Adva
 
 ### Local stdio bridge: `@featherlog/mcp`
 
-For clients that only launch local servers, [`@featherlog/mcp`](../packages/mcp/README.md) runs on your machine. It speaks stdio to the client and forwards everything to `<url>/mcp` with an API key.
+Most clients (Claude, Claude Code, Cursor, ChatGPT) connect to `<url>/mcp` directly, so you don't need this. For clients that only launch local servers, [`@featherlog/mcp`](../packages/mcp/README.md) runs on your machine: it speaks stdio to the client and forwards everything to `<url>/mcp` with an API key. It isn't published to npm yet — build it from the repository (`pnpm --filter @featherlog/mcp build`) and run `node packages/mcp/dist/cli.js`; once published, the `npx` form below works.
 
 ```sh
 npx -y @featherlog/mcp --url https://changelog.example.com --key fl_live_…

@@ -218,7 +218,12 @@
       "ownerDescription": "Control total, incluido eliminar el espacio de trabajo y transferir la propiedad.",
       "adminDescription": "Gestiona los ajustes, las categorías, el widget, las claves de API y los miembros. Puede editar cualquier publicación.",
       "editorDescription": "Escribe, edita y publica novedades. No puede cambiar los ajustes ni gestionar el equipo."
-    }
+    },
+    "inviteLinkReady": "Invitación creada para {email}",
+    "inviteLinkEmailed": "Hemos enviado este enlace a {email}. También puedes compartirlo directamente:",
+    "inviteLinkShare": "El email no está configurado en este servidor: envía este enlace a {email}:",
+    "inviteLink": "Enlace de invitación",
+    "linkCopied": "Nuevo enlace de invitación para {email} copiado al portapapeles"
   },
   "api": {
     "title": "API y MCP",
