@@ -451,8 +451,8 @@ export async function listPosts(ctx: Ctx, raw: z.input<typeof ListPostsInput> = 
   const now = new Date();
   const where: SQL[] = [eq(posts.workspaceId, ctx.workspaceId), isNull(posts.deletedAt)];
   if (input.status === "draft") where.push(eq(posts.published, false));
-  if (input.status === "published") where.push(eq(posts.published, true), sql`${posts.publishedAt} <= ${now}`);
-  if (input.status === "scheduled") where.push(eq(posts.published, true), sql`${posts.publishedAt} > ${now}`);
+  if (input.status === "published") where.push(eq(posts.published, true), sql`${posts.publishedAt} <= ${now.toISOString()}::timestamptz`);
+  if (input.status === "scheduled") where.push(eq(posts.published, true), sql`${posts.publishedAt} > ${now.toISOString()}::timestamptz`);
   if (input.locale) {
     where.push(
       exists(
@@ -496,7 +496,8 @@ export async function listPosts(ctx: Ctx, raw: z.input<typeof ListPostsInput> = 
   }
   const cursor = input.cursor ? decodeCursor(input.cursor) : null;
   if (cursor) {
-    where.push(or(lt(sortKey, cursor.at), and(eq(sortKey, cursor.at), lt(posts.id, cursor.id)))!);
+    const at = sql`${cursor.at.toISOString()}::timestamptz`;
+    where.push(or(sql`${sortKey} < ${at}`, and(sql`${sortKey} = ${at}`, lt(posts.id, cursor.id)))!);
   }
   const rows = await ctx.db
     .select()
@@ -519,8 +520,8 @@ export async function countPostsByStatus(ctx: Ctx) {
     .select({
       all: sql<number>`count(*)::int`,
       draft: sql<number>`count(*) filter (where not ${posts.published})::int`,
-      scheduled: sql<number>`count(*) filter (where ${posts.published} and ${posts.publishedAt} > ${now})::int`,
-      published: sql<number>`count(*) filter (where ${posts.published} and ${posts.publishedAt} <= ${now})::int`,
+      scheduled: sql<number>`count(*) filter (where ${posts.published} and ${posts.publishedAt} > ${now.toISOString()}::timestamptz)::int`,
+      published: sql<number>`count(*) filter (where ${posts.published} and ${posts.publishedAt} <= ${now.toISOString()}::timestamptz)::int`,
     })
     .from(posts)
     .where(and(eq(posts.workspaceId, ctx.workspaceId), isNull(posts.deletedAt)));

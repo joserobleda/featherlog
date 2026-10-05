@@ -23,6 +23,7 @@
     "@featherlog/markdown": "workspace:*",
     "@featherlog/widget": "workspace:*",
     "@hono/zod-openapi": "^1.6.3",
+    "@lezer/highlight": "^1.2.5",
     "@modelcontextprotocol/sdk": "^1.32.0",
     "@scalar/hono-api-reference": "^0.12.9",
     "better-auth": "^1.7.7",

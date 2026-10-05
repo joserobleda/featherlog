@@ -1,4 +1,5 @@
 export * from "./apiKeys";
+export * from "./assets";
 export * from "./auth";
 export * from "./categories";
 export * from "./crypto";

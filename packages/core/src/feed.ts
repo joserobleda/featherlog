@@ -34,7 +34,7 @@ function visible(workspaceId: string, now: Date): SQL[] {
     eq(posts.workspaceId, workspaceId),
     eq(posts.published, true),
     isNull(posts.deletedAt),
-    sql`${posts.publishedAt} <= ${now}`,
+    sql`${posts.publishedAt} <= ${now.toISOString()}::timestamptz`,
   ];
 }
 

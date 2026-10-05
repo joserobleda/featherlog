@@ -42,7 +42,8 @@ export function categoryTextColor(hex: string): "#000000" | "#ffffff" {
     return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
   };
   const l = 0.2126 * channel(0) + 0.7152 * channel(2) + 0.0722 * channel(4);
-  const contrastBlack = (l + 0.05) / 0.05;
+  // Labels are small bold text on a coloured pill: prefer white while it keeps a 3:1 contrast
+  // (WCAG large/bold text), which matches how brand colours are usually designed.
   const contrastWhite = 1.05 / (l + 0.05);
-  return contrastBlack >= contrastWhite ? "#000000" : "#ffffff";
+  return contrastWhite >= 3 ? "#ffffff" : "#000000";
 }
