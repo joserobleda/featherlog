@@ -5,7 +5,9 @@ import { fileURLToPath } from "node:url";
 const build = fileURLToPath(new URL("../../../packages/widget/build/", import.meta.url));
 const pub = fileURLToPath(new URL("../public/", import.meta.url));
 if (!existsSync(`${build}widget.js`)) {
-  console.warn("[copy-widget] packages/widget/build not found — run `pnpm --filter @featherlog/widget build`");
+  console.warn(
+    "[copy-widget] packages/widget/build not found — run `pnpm --filter @featherlog/widget build`",
+  );
   process.exit(0);
 }
 mkdirSync(`${pub}widget`, { recursive: true });

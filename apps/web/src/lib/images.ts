@@ -1,5 +1,5 @@
 import "server-only";
-import { createAsset, type Ctx } from "@featherlog/core";
+import { type Ctx, createAsset } from "@featherlog/core";
 import { nanoid } from "nanoid";
 import sharp from "sharp";
 import { storage } from "./storage";
@@ -18,8 +18,10 @@ export async function storeImage(
   input: { bytes: Buffer; mime: string; folder: string },
   opts: { maxWidth?: number; square?: number } = {},
 ) {
-  if (!ACCEPTED.has(input.mime)) throw new UploadError("Unsupported image type. Use PNG, JPEG, WebP, GIF or AVIF.");
-  if (input.bytes.byteLength > MAX_UPLOAD_BYTES) throw new UploadError("Image is larger than 10 MB.");
+  if (!ACCEPTED.has(input.mime))
+    throw new UploadError("Unsupported image type. Use PNG, JPEG, WebP, GIF or AVIF.");
+  if (input.bytes.byteLength > MAX_UPLOAD_BYTES)
+    throw new UploadError("Image is larger than 10 MB.");
 
   let body: Buffer;
   let mime: string;
@@ -51,6 +53,12 @@ export async function storeImage(
   }
   const key = `${input.folder}/${ctx.workspaceId}/${nanoid(16)}.${ext}`;
   await storage.put(key, body, mime);
-  const asset = await createAsset(ctx, { storageKey: key, mime, size: body.byteLength, width, height });
+  const asset = await createAsset(ctx, {
+    storageKey: key,
+    mime,
+    size: body.byteLength,
+    width,
+    height,
+  });
   return { ...asset, url: storage.url(key) };
 }

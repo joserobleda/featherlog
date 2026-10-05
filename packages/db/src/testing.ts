@@ -5,8 +5,8 @@ import { migrate as migratePglite } from "drizzle-orm/pglite/migrator";
 import { drizzle as drizzlePg } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import type { Db } from "./index";
+import { schema } from "./index";
 import { runMigrations } from "./migrate";
-import * as schema from "./schema";
 
 const migrationsFolder = fileURLToPath(new URL("../drizzle", import.meta.url));
 

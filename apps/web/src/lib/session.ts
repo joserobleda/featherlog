@@ -1,11 +1,11 @@
 import "server-only";
 import {
   type Ctx,
+  findWorkspaceBySlug,
   getMembershipRole,
   listUserWorkspaces,
   type Role,
   type Workspace,
-  findWorkspaceBySlug,
 } from "@featherlog/core";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
@@ -43,6 +43,11 @@ export const getWorkspaceContext = cache(async (slug: string): Promise<Workspace
     workspace: found.workspace,
     role,
     workspaces,
-    ctx: { db, workspaceId: found.workspace.id, actor: { kind: "user", userId: session.user.id, role }, via: "panel" },
+    ctx: {
+      db,
+      workspaceId: found.workspace.id,
+      actor: { kind: "user", userId: session.user.id, role },
+      via: "panel",
+    },
   };
 });

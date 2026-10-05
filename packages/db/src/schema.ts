@@ -103,10 +103,7 @@ export const workspaces = pgTable("workspaces", {
   noindex: boolean("noindex").notNull().default(false),
   privateMode: boolean("private_mode").notNull().default(false),
   defaultLocale: text("default_locale").notNull().default("en"),
-  locales: text("locales")
-    .array()
-    .notNull()
-    .default(sql`ARRAY['en']::text[]`),
+  locales: text("locales").array().notNull().default(sql`ARRAY['en']::text[]`),
   missingTranslation: text("missing_translation").notNull().default("fallback"),
   integrationsCanPublish: boolean("integrations_can_publish").notNull().default(false),
   customDomain: text("custom_domain").unique(),
@@ -126,7 +123,10 @@ export const memberships = pgTable(
     role: text("role").notNull(),
     createdAt: createdAt(),
   },
-  (t) => [primaryKey({ columns: [t.workspaceId, t.userId] }), index("memberships_user_idx").on(t.userId)],
+  (t) => [
+    primaryKey({ columns: [t.workspaceId, t.userId] }),
+    index("memberships_user_idx").on(t.userId),
+  ],
 );
 
 export const invitations = pgTable(
@@ -236,7 +236,10 @@ export const postCategories = pgTable(
       .notNull()
       .references(() => categories.id, { onDelete: "cascade" }),
   },
-  (t) => [primaryKey({ columns: [t.postId, t.categoryId] }), index("post_categories_category_idx").on(t.categoryId)],
+  (t) => [
+    primaryKey({ columns: [t.postId, t.categoryId] }),
+    index("post_categories_category_idx").on(t.categoryId),
+  ],
 );
 
 export const assets = pgTable(
@@ -268,7 +271,10 @@ export const widgetSettings = pgTable("widget_settings", {
   softHide: boolean("soft_hide").notNull().default(true),
   eyecatcher: text("eyecatcher").notNull().default("on"),
   /** Per-locale overrides of the widget UI strings: { es: { title: "..." } } */
-  uiStrings: jsonb("ui_strings").$type<Record<string, Record<string, string>>>().notNull().default({}),
+  uiStrings: jsonb("ui_strings")
+    .$type<Record<string, Record<string, string>>>()
+    .notNull()
+    .default({}),
   updatedAt: updatedAt(),
 });
 
@@ -306,7 +312,10 @@ export const idempotencyKeys = pgTable(
     response: jsonb("response"),
     createdAt: createdAt(),
   },
-  (t) => [primaryKey({ columns: [t.principal, t.key] }), index("idempotency_created_idx").on(t.createdAt)],
+  (t) => [
+    primaryKey({ columns: [t.principal, t.key] }),
+    index("idempotency_created_idx").on(t.createdAt),
+  ],
 );
 
 /** Transactional outbox of domain events (webhooks/integrations consume it later). */
@@ -323,4 +332,3 @@ export const events = pgTable(
   },
   (t) => [index("events_workspace_idx").on(t.workspaceId, t.id)],
 );
-

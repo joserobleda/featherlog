@@ -1,7 +1,10 @@
 import type { Mail } from "./mailer";
 
 const esc = (s: string) =>
-  s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+  s.replace(
+    /[&<>"']/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!,
+  );
 
 function layout(title: string, body: string, cta?: { label: string; url: string }) {
   const button = cta
@@ -23,10 +26,14 @@ export function verifyEmail(to: string, url: string): Mail {
   return {
     to,
     subject: "Verify your email",
-    html: layout("Verify your email", "<p>Confirm your email address to finish setting up your account.</p>", {
-      label: "Verify email",
-      url,
-    }),
+    html: layout(
+      "Verify your email",
+      "<p>Confirm your email address to finish setting up your account.</p>",
+      {
+        label: "Verify email",
+        url,
+      },
+    ),
     text: `Verify your email: ${url}`,
   };
 }
@@ -35,10 +42,14 @@ export function magicLinkEmail(to: string, url: string): Mail {
   return {
     to,
     subject: "Your sign-in link",
-    html: layout("Sign in to Featherlog", "<p>Click the button below to sign in. The link expires in 10 minutes.</p>", {
-      label: "Sign in",
-      url,
-    }),
+    html: layout(
+      "Sign in to Featherlog",
+      "<p>Click the button below to sign in. The link expires in 10 minutes.</p>",
+      {
+        label: "Sign in",
+        url,
+      },
+    ),
     text: `Sign in to Featherlog: ${url}`,
   };
 }
@@ -47,15 +58,22 @@ export function resetPasswordEmail(to: string, url: string): Mail {
   return {
     to,
     subject: "Reset your password",
-    html: layout("Reset your password", "<p>Someone asked to reset the password for this account.</p>", {
-      label: "Choose a new password",
-      url,
-    }),
+    html: layout(
+      "Reset your password",
+      "<p>Someone asked to reset the password for this account.</p>",
+      {
+        label: "Choose a new password",
+        url,
+      },
+    ),
     text: `Reset your password: ${url}`,
   };
 }
 
-export function invitationEmail(to: string, opts: { workspace: string; inviter: string; url: string }): Mail {
+export function invitationEmail(
+  to: string,
+  opts: { workspace: string; inviter: string; url: string },
+): Mail {
   return {
     to,
     subject: `${opts.inviter} invited you to ${opts.workspace} on Featherlog`,

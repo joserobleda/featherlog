@@ -1,6 +1,11 @@
 import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  DeleteObjectCommand,
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import { env } from "./env";
 
 export interface Storage {
@@ -13,7 +18,8 @@ export interface Storage {
 
 const safeKey = (key: string) => {
   const normalized = path.posix.normalize(key).replace(/^(\.\.(\/|$))+/, "");
-  if (normalized.startsWith("/") || normalized.includes("..")) throw new Error("Invalid storage key");
+  if (normalized.startsWith("/") || normalized.includes(".."))
+    throw new Error("Invalid storage key");
   return normalized;
 };
 
@@ -59,7 +65,9 @@ class S3Storage implements Storage {
   }
   async get(key: string) {
     try {
-      const r = await this.client.send(new GetObjectCommand({ Bucket: env.S3_BUCKET, Key: safeKey(key) }));
+      const r = await this.client.send(
+        new GetObjectCommand({ Bucket: env.S3_BUCKET, Key: safeKey(key) }),
+      );
       const bytes = await r.Body?.transformToByteArray();
       return bytes ? { body: Buffer.from(bytes), contentType: r.ContentType } : null;
     } catch {
@@ -71,7 +79,9 @@ class S3Storage implements Storage {
   }
   url(key: string) {
     // Without a public bucket URL, files are proxied through the app.
-    return env.S3_PUBLIC_URL ? `${env.S3_PUBLIC_URL.replace(/\/+$/, "")}/${safeKey(key)}` : `${env.APP_URL}/uploads/${safeKey(key)}`;
+    return env.S3_PUBLIC_URL
+      ? `${env.S3_PUBLIC_URL.replace(/\/+$/, "")}/${safeKey(key)}`
+      : `${env.APP_URL}/uploads/${safeKey(key)}`;
   }
 }
 

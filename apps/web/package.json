@@ -13,6 +13,9 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.900.0",
+    "@better-auth/cimd": "1.7.7",
+    "@better-auth/mcp": "1.7.7",
+    "@better-auth/oauth-provider": "1.7.7",
     "@codemirror/commands": "^6.8.0",
     "@codemirror/lang-markdown": "^6.3.0",
     "@codemirror/language": "^6.11.0",
@@ -24,7 +27,7 @@
     "@featherlog/widget": "workspace:*",
     "@hono/zod-openapi": "^1.6.3",
     "@lezer/highlight": "^1.2.5",
-    "@modelcontextprotocol/sdk": "^1.32.0",
+    "@modelcontextprotocol/server": "^2.3.0",
     "@scalar/hono-api-reference": "^0.12.9",
     "better-auth": "^1.7.7",
     "class-variance-authority": "^0.7.1",
@@ -49,6 +52,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@modelcontextprotocol/client": "^2.3.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/nodemailer": "^7.0.0",
     "@types/react": "^19.1.0",

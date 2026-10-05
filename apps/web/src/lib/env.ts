@@ -7,7 +7,10 @@ const bool = z
 
 const schema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
-  DATABASE_URL: z.string().min(1).default("postgres://featherlog:featherlog@localhost:5442/featherlog"),
+  DATABASE_URL: z
+    .string()
+    .min(1)
+    .default("postgres://featherlog:featherlog@localhost:5442/featherlog"),
   AUTH_SECRET: z.string().min(16).default("dev-secret-change-me-dev-secret-change-me"),
   APP_URL: z.url().default("http://localhost:3100"),
   PUBLIC_URL: z.url().optional(),
@@ -34,7 +37,9 @@ const schema = z.object({
 function load() {
   const parsed = schema.safeParse(process.env);
   if (!parsed.success) {
-    const issues = parsed.error.issues.map((i) => `  - ${i.path.join(".")}: ${i.message}`).join("\n");
+    const issues = parsed.error.issues
+      .map((i) => `  - ${i.path.join(".")}: ${i.message}`)
+      .join("\n");
     throw new Error(`Invalid environment configuration:\n${issues}`);
   }
   const env = parsed.data;
@@ -42,8 +47,13 @@ function load() {
     // Only warn: `next build` evaluates modules with NODE_ENV=production.
     console.warn("[featherlog] AUTH_SECRET is not set — set a long random value in production.");
   }
-  if (env.STORAGE_DRIVER === "s3" && !(env.S3_BUCKET && env.S3_ACCESS_KEY_ID && env.S3_SECRET_ACCESS_KEY)) {
-    throw new Error("STORAGE_DRIVER=s3 requires S3_BUCKET, S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY");
+  if (
+    env.STORAGE_DRIVER === "s3" &&
+    !(env.S3_BUCKET && env.S3_ACCESS_KEY_ID && env.S3_SECRET_ACCESS_KEY)
+  ) {
+    throw new Error(
+      "STORAGE_DRIVER=s3 requires S3_BUCKET, S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY",
+    );
   }
   const strip = (u: string) => u.replace(/\/+$/, "");
   return {

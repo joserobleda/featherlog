@@ -1,0 +1,14 @@
+/* Public changelog page tweaks (on top of globals.css). */
+
+/* Category markers are shown as chips above the title; hide the inline copies. */
+.fl-public .fl-prose .fl-categories {
+  display: none;
+}
+
+.fl-public .fl-prose > .fl-categories:first-child + * {
+  margin-top: 0;
+}
+
+.fl-public a {
+  text-underline-offset: 2px;
+}

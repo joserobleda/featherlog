@@ -1,10 +1,13 @@
+import { cimd } from "@better-auth/cimd";
+import { fetchClientMetadataResource } from "@better-auth/cimd/node";
+import { mcp } from "@better-auth/mcp";
+import { findInvitation, SCOPES } from "@featherlog/core";
 import { schema } from "@featherlog/db";
-import { findInvitation } from "@featherlog/core";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
-import { magicLink } from "better-auth/plugins";
+import { jwt, magicLink } from "better-auth/plugins";
 import { count, eq } from "drizzle-orm";
 import { db } from "./db";
 import { magicLinkEmail, resetPasswordEmail, verifyEmail } from "./emails";
@@ -33,6 +36,10 @@ async function assertSignupAllowed(email: string, inviteToken?: string | null) {
   throw new APIError("FORBIDDEN", { message: "Sign-ups are disabled on this instance." });
 }
 
+/** Canonical MCP protected-resource URL (tokens are audience-bound to it). */
+export const MCP_RESOURCE = `${env.APP_URL}/mcp`;
+export const OAUTH_BASE_SCOPES = ["openid", "profile", "email", "offline_access"] as const;
+
 export const auth = betterAuth({
   appName: "Featherlog",
   baseURL: env.APP_URL,
@@ -40,12 +47,7 @@ export const auth = betterAuth({
   trustedOrigins: [env.APP_URL],
   database: drizzleAdapter(db, {
     provider: "pg",
-    schema: {
-      user: schema.user,
-      session: schema.session,
-      account: schema.account,
-      verification: schema.verification,
-    },
+    schema,
   }),
   user: {
     additionalFields: {
@@ -79,7 +81,8 @@ export const auth = betterAuth({
     user: {
       create: {
         before: async (user, ctx) => {
-          const inviteToken = (ctx?.body as { inviteToken?: string } | undefined)?.inviteToken ?? null;
+          const inviteToken =
+            (ctx?.body as { inviteToken?: string } | undefined)?.inviteToken ?? null;
           await assertSignupAllowed(user.email, inviteToken);
           return { data: user };
         },
@@ -93,6 +96,18 @@ export const auth = betterAuth({
         await sendMailSafe(magicLinkEmail(email, url));
       },
     }),
+    // OAuth 2.1 authorization server for MCP clients (Claude, ChatGPT, Cursor…).
+    jwt(),
+    mcp({
+      resource: MCP_RESOURCE,
+      loginPage: "/login",
+      consentPage: "/oauth/consent",
+      scopes: [...OAUTH_BASE_SCOPES, ...SCOPES],
+      // Most MCP clients still register dynamically (RFC 7591); CIMD covers 2026-era clients.
+      allowDynamicClientRegistration: true,
+      allowUnauthenticatedClientRegistration: true,
+    }),
+    cimd({ fetchClientMetadataResource, metadataProfile: "mcp-2026-07-28" }),
     nextCookies(),
   ],
 });

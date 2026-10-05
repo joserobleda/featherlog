@@ -18,11 +18,21 @@ export async function runAction<T>(fn: () => Promise<T>): Promise<ActionResult<T
         const key = issue.path.join(".") || "_";
         fieldErrors[key] ??= issue.message;
       }
-      return { ok: false, error: err.issues[0]?.message ?? "Invalid input", code: "validation", fieldErrors };
+      return {
+        ok: false,
+        error: err.issues[0]?.message ?? "Invalid input",
+        code: "validation",
+        fieldErrors,
+      };
     }
     if (isAppError(err)) {
       const field = (err.details as { field?: string } | undefined)?.field;
-      return { ok: false, error: err.message, code: err.code, fieldErrors: field ? { [field]: err.message } : undefined };
+      return {
+        ok: false,
+        error: err.message,
+        code: err.code,
+        fieldErrors: field ? { [field]: err.message } : undefined,
+      };
     }
     // Let Next.js redirect()/notFound() propagate.
     if (err && typeof err === "object" && "digest" in err) throw err;

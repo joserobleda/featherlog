@@ -1,8 +1,12 @@
 import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import * as schema from "./schema";
+import * as authSchema from "./auth-schema";
+import * as appSchema from "./schema";
 
+const schema = { ...appSchema, ...authSchema };
+
+export * from "./auth-schema";
 export * from "./schema";
 export { schema };
 
