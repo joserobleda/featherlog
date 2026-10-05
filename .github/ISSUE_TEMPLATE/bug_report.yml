@@ -1,0 +1,73 @@
+name: Bug report
+description: Something isn't working as expected
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug! **Security issues:** please don't file them here. Use a private security advisory instead (see SECURITY.md).
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the bug.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Go to …
+        2. Click …
+        3. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Dashboard / editor
+        - Public changelog page
+        - Widget
+        - REST API
+        - MCP server / @featherlog/mcp
+        - Self-hosting / Docker / deploy scripts
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Image tag or commit (for example 0.1.0 or main-abc1234)
+    validations:
+      required: true
+  - type: dropdown
+    id: hosting
+    attributes:
+      label: How do you run Featherlog?
+      options:
+        - Docker Compose (self-hosted)
+        - Other self-hosted setup
+        - Local development
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Browser, OS, MCP client, reverse proxy, storage driver… whatever is relevant.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Relevant output from `docker compose logs app` or the browser console. Remove secrets.
+      render: shell

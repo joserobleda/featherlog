@@ -19,6 +19,7 @@ RECIPIENT=$(get BACKUP_AGE_RECIPIENT)
 RETENTION=$(get BACKUP_RETENTION_DAYS || echo 30)
 STAMP=$(date -u +%Y%m%dT%H%M%SZ)
 FILE="featherlog-$STAMP.sql.gz.age"
+mkdir -p "$APP_DIR/backups"
 cd "$APP_DIR/docker"
 
 docker compose exec -T postgres pg_dump -U featherlog --no-owner --clean --if-exists featherlog \

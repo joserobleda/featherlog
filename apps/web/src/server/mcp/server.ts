@@ -335,7 +335,7 @@ export function buildMcpServer(principal: McpPrincipal) {
     {
       title: "Publish post",
       description:
-        "Publishes a post now (visible on the public page and widget). May be disabled for integrations by the workspace owner — if so, ask the user to publish it from the dashboard.",
+        "Publishes a post (at its planned publication date if one is set, otherwise now). Use schedule_post for a specific future date. May be disabled for integrations by the workspace owner — if so, ask the user to publish it from the dashboard.",
       inputSchema: z.object({
         workspace: workspaceArg,
         id: z.string(),
@@ -351,10 +351,7 @@ export function buildMcpServer(principal: McpPrincipal) {
     async ({ workspace, id, expectedVersion }) =>
       guarded(async () => {
         const r = await resolve(workspace);
-        return serializePost(
-          r.workspace,
-          await publishPost(r.ctx, id, { at: new Date(), expectedVersion }),
-        );
+        return serializePost(r.workspace, await publishPost(r.ctx, id, { expectedVersion }));
       }),
   );
 
@@ -606,6 +603,24 @@ export function buildMcpServer(principal: McpPrincipal) {
       mimeType: "application/json",
     },
     async (uri) => {
+      // Users with several workspaces get the list (then pass `workspace` to the tools).
+      if (principal.kind === "user") {
+        const rows = await listUserWorkspaces(db, principal.userId);
+        if (rows.length !== 1) {
+          const list = {
+            workspaces: rows.map((w) => ({
+              slug: w.workspace.slug,
+              name: w.workspace.name,
+              role: w.role,
+            })),
+          };
+          return {
+            contents: [
+              { uri: uri.href, mimeType: "application/json", text: JSON.stringify(list, null, 2) },
+            ],
+          };
+        }
+      }
       const r = await resolve(undefined);
       const [cats, recent] = await Promise.all([
         listCategories(db, r.workspace.id),

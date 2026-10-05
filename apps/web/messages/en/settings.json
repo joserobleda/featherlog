@@ -61,7 +61,7 @@
     "noindex": "Hide from search engines",
     "noindexDescription": "Asks Google and other search engines not to index your changelog.",
     "privateMode": "Private mode",
-    "privateModeDescription": "The public page can only be reached through the links in your widget, so only your signed-in users can read it.",
+    "privateModeDescription": "The public page and posts can only be opened through the links in your widget (signed, short-lived links). Search engines and people without those links can’t read them.",
     "whitelabel": "Remove Featherlog branding",
     "whitelabelDescription": "Hide the “Powered by Featherlog” footer.",
     "customDomain": "Custom domain",
@@ -111,10 +111,10 @@
       "on": "On",
       "onDescription": "The badge pulses gently when there's something new.",
       "progressive": "Progressive",
-      "progressiveDescription": "The animation gets more noticeable the more unread posts there are."
+      "progressiveDescription": "The animation gets more noticeable after a few visits with unread posts."
     },
-    "softHide": "Hide the badge when there's nothing new",
-    "softHideDescription": "The badge only appears when there are unread posts.",
+    "softHide": "Keep a quiet badge when there’s nothing new",
+    "softHideDescription": "Instead of disappearing when everything is read, the badge shrinks to a small grey dot.",
     "texts": "Widget texts",
     "textsDescription": "Override the built-in texts for each language. Leave a field empty to use the default.",
     "textsLanguage": "Language",

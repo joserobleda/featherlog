@@ -9,7 +9,7 @@ It's a thin **bridge**: it runs on your machine, speaks MCP over stdio to your c
 ## Requirements
 
 - Node.js 20 or newer
-- A Featherlog workspace API key (`fl_live_…`) — create one in the dashboard under **Settings → API keys**
+- A Featherlog workspace API key (`fl_live_…`) — create one in the dashboard under **Settings → API & MCP**
 
 ## Usage
 

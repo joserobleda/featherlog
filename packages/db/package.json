@@ -11,7 +11,7 @@
   "scripts": {
     "typecheck": "tsc --noEmit -p .",
     "generate": "drizzle-kit generate",
-    "migrate": "tsx src/migrate-cli.ts"
+    "migrate": "tsx --env-file-if-exists=../../apps/web/.env.local src/migrate-cli.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.3",

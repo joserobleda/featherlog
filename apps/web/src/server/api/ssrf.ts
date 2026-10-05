@@ -1,43 +1,87 @@
 import { lookup } from "node:dns/promises";
-import { isIP } from "node:net";
+import { BlockList, isIP } from "node:net";
+import { Agent, fetch as undiciFetch } from "undici";
 
-function isPrivate(ip: string) {
-  if (isIP(ip) === 6) {
-    const v = ip.toLowerCase();
-    return (
-      v === "::1" ||
-      v === "::" ||
-      v.startsWith("fc") ||
-      v.startsWith("fd") ||
-      v.startsWith("fe80") ||
-      v.startsWith("::ffff:127.") ||
-      v.startsWith("::ffff:10.") ||
-      v.startsWith("::ffff:192.168.")
-    );
-  }
-  const [a, b] = ip.split(".").map(Number) as [number, number];
-  return (
-    a === 10 ||
-    a === 127 ||
-    a === 0 ||
-    (a === 169 && b === 254) ||
-    (a === 172 && b >= 16 && b <= 31) ||
-    (a === 192 && b === 168) ||
-    (a === 100 && b >= 64 && b <= 127) ||
-    a >= 224
-  );
+/** Address ranges an import-from-URL request must never reach. */
+const blocked = new BlockList();
+for (const [net, prefix] of [
+  ["0.0.0.0", 8],
+  ["10.0.0.0", 8],
+  ["100.64.0.0", 10],
+  ["127.0.0.0", 8],
+  ["169.254.0.0", 16],
+  ["172.16.0.0", 12],
+  ["192.0.0.0", 24],
+  ["192.168.0.0", 16],
+  ["198.18.0.0", 15],
+  ["224.0.0.0", 3],
+] as const) {
+  blocked.addSubnet(net, prefix, "ipv4");
 }
+for (const [net, prefix] of [
+  ["::", 128],
+  ["::1", 128],
+  ["fc00::", 7],
+  ["fe80::", 10],
+  ["ff00::", 8],
+  ["64:ff9b::", 96],
+  ["2001:db8::", 32],
+] as const) {
+  blocked.addSubnet(net, prefix, "ipv6");
+}
+
+export function isBlockedAddress(ip: string) {
+  const family = isIP(ip);
+  if (family === 4) return blocked.check(ip, "ipv4");
+  if (family === 6) {
+    const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/i.exec(ip);
+    if (mapped) return blocked.check(mapped[1]!, "ipv4");
+    return blocked.check(ip, "ipv6");
+  }
+  return true;
+}
+
+/**
+ * The connection itself re-checks the resolved address, so DNS rebinding between our check and
+ * the actual connect cannot reach private networks.
+ */
+const safeAgent = new Agent({
+  connect: {
+    lookup(hostname, options, callback) {
+      lookup(hostname, { all: true })
+        .then((addrs) => {
+          const ok = addrs.find((a) => !isBlockedAddress(a.address));
+          if (!ok || addrs.some((a) => isBlockedAddress(a.address))) {
+            callback(new Error("This URL points to a private network address"), "", 4);
+            return;
+          }
+          if ((options as { all?: boolean }).all) callback(null, [ok] as never, ok.family);
+          else callback(null, ok.address, ok.family);
+        })
+        .catch((err) => callback(err, "", 4));
+    },
+  },
+});
 
 /** Downloads a public http(s) URL with size/time limits, refusing private network targets. */
 export async function fetchPublicUrl(raw: string, maxBytes: number) {
   const url = new URL(raw);
   if (url.protocol !== "https:" && url.protocol !== "http:")
     throw new Error("Only http(s) URLs are allowed");
-  const addresses = await lookup(url.hostname, { all: true });
-  if (addresses.length === 0 || addresses.some((a) => isPrivate(a.address))) {
+  if (
+    isIP(url.hostname.replace(/^\[|\]$/g, "")) &&
+    isBlockedAddress(url.hostname.replace(/^\[|\]$/g, ""))
+  ) {
     throw new Error("This URL points to a private network address");
   }
-  const res = await fetch(url, { redirect: "error", signal: AbortSignal.timeout(10_000) });
+  if (url.hostname === "localhost" || url.hostname.endsWith(".localhost")) {
+    throw new Error("This URL points to a private network address");
+  }
+  const res = await undiciFetch(url, {
+    redirect: "error",
+    signal: AbortSignal.timeout(10_000),
+    dispatcher: safeAgent,
+  });
   if (!res.ok || !res.body) throw new Error(`Download failed with status ${res.status}`);
   const declared = Number(res.headers.get("content-length") ?? 0);
   if (declared > maxBytes) throw new Error("File is too large");

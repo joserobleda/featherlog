@@ -61,7 +61,7 @@
     "noindex": "Ocultar en buscadores",
     "noindexDescription": "Pide a Google y a otros buscadores que no indexen tu página.",
     "privateMode": "Modo privado",
-    "privateModeDescription": "La página pública solo es accesible desde los enlaces del widget, así que solo la pueden leer los usuarios que han iniciado sesión en tu producto.",
+    "privateModeDescription": "La página pública y las entradas solo se abren desde los enlaces del widget (enlaces firmados y temporales). Los buscadores y quien no tenga esos enlaces no pueden leerlas.",
     "whitelabel": "Quitar la marca Featherlog",
     "whitelabelDescription": "Oculta el pie «Con la tecnología de Featherlog».",
     "customDomain": "Dominio propio",
@@ -111,10 +111,10 @@
       "on": "Activada",
       "onDescription": "El indicador late suavemente cuando hay algo nuevo.",
       "progressive": "Progresiva",
-      "progressiveDescription": "La animación es más llamativa cuantas más publicaciones sin leer haya."
+      "progressiveDescription": "La animación se vuelve más llamativa tras varias visitas con publicaciones sin leer."
     },
-    "softHide": "Ocultar el indicador si no hay novedades",
-    "softHideDescription": "El indicador solo aparece cuando hay publicaciones sin leer.",
+    "softHide": "Mantener un indicador discreto si no hay novedades",
+    "softHideDescription": "En lugar de desaparecer cuando todo está leído, el indicador se reduce a un pequeño punto gris.",
     "texts": "Textos del widget",
     "textsDescription": "Personaliza los textos predeterminados en cada idioma. Deja un campo vacío para usar el texto por defecto.",
     "textsLanguage": "Idioma",

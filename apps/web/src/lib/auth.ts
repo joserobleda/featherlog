@@ -8,7 +8,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import { jwt, magicLink } from "better-auth/plugins";
-import { count, eq } from "drizzle-orm";
+import { and, count, eq, gt } from "drizzle-orm";
 import { db } from "./db";
 import { magicLinkEmail, resetPasswordEmail, verifyEmail } from "./emails";
 import { env } from "./env";
@@ -30,7 +30,13 @@ async function assertSignupAllowed(email: string, inviteToken?: string | null) {
     const [pending] = await db
       .select({ id: schema.invitations.id })
       .from(schema.invitations)
-      .where(eq(schema.invitations.email, email.toLowerCase()));
+      .where(
+        and(
+          eq(schema.invitations.email, email.toLowerCase()),
+          eq(schema.invitations.status, "pending"),
+          gt(schema.invitations.expiresAt, new Date()),
+        ),
+      );
     if (pending) return;
   }
   throw new APIError("FORBIDDEN", { message: "Sign-ups are disabled on this instance." });

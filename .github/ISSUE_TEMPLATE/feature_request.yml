@@ -1,0 +1,41 @@
+name: Feature request
+description: Suggest an idea or improvement
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: Describe the situation and why the current behavior isn't enough.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: What would you like to happen?
+      description: How it could work from your point of view (UI, API, MCP, widget option…).
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives and workarounds
+      description: Anything you've tried or considered, including how other tools (Headway, …) handle it.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Dashboard / editor
+        - Public changelog page
+        - Widget
+        - REST API
+        - MCP server / AI agents
+        - Self-hosting / deployment
+        - Other
+  - type: checkboxes
+    id: contribute
+    attributes:
+      label: Contribution
+      options:
+        - label: I'd be willing to open a pull request for this

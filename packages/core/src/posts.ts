@@ -276,6 +276,11 @@ async function loadRow(ctx: Ctx, id: string) {
   return row;
 }
 
+/** Runs a mutation atomically: rendering, category sync and the outbox event commit together. */
+function inTx<T>(ctx: Ctx, fn: (ctx: Ctx) => Promise<T>): Promise<T> {
+  return ctx.db.transaction((tx) => fn({ ...ctx, db: tx }));
+}
+
 /* ------------------------------------------------------------------ */
 
 export async function getPost(ctx: Ctx, id: string): Promise<Post> {
@@ -284,7 +289,7 @@ export async function getPost(ctx: Ctx, id: string): Promise<Post> {
   return (await hydrate(ctx.db, [row]))[0]!;
 }
 
-export async function createPost(ctx: Ctx, raw: z.input<typeof CreatePostInput>): Promise<Post> {
+async function createPostImpl(ctx: Ctx, raw: z.input<typeof CreatePostInput>): Promise<Post> {
   assertCan(ctx, "posts:write");
   const input = CreatePostInput.parse(raw);
   const ws = await getWorkspace(ctx.db, ctx.workspaceId);
@@ -333,7 +338,7 @@ export async function createPost(ctx: Ctx, raw: z.input<typeof CreatePostInput>)
   return post;
 }
 
-export async function updatePost(
+async function updatePostImpl(
   ctx: Ctx,
   id: string,
   raw: z.input<typeof UpdatePostInput>,
@@ -370,7 +375,7 @@ export async function updatePost(
         await ctx.db
           .delete(postTranslations)
           .where(and(eq(postTranslations.postId, row.id), eq(postTranslations.locale, locale)));
-        existing.splice(existing.indexOf(current!), 1);
+        if (current) existing.splice(existing.indexOf(current), 1);
         continue;
       }
       if (!ws.locales.includes(locale)) {
@@ -430,7 +435,7 @@ export async function deleteTranslation(
 }
 
 /** Publishes now, or at `at` (scheduled) if it is in the future. */
-export async function publishPost(
+async function publishPostImpl(
   ctx: Ctx,
   id: string,
   opts: { at?: Date | string | null; expectedVersion?: number } = {},
@@ -462,7 +467,7 @@ export async function schedulePost(
   return publishPost(ctx, id, { at: date, expectedVersion: opts.expectedVersion });
 }
 
-export async function unpublishPost(
+async function unpublishPostImpl(
   ctx: Ctx,
   id: string,
   opts: { expectedVersion?: number } = {},
@@ -481,7 +486,7 @@ export async function unpublishPost(
   return getPost(ctx, row.id);
 }
 
-export async function deletePost(ctx: Ctx, id: string, opts: { expectedVersion?: number } = {}) {
+async function deletePostImpl(ctx: Ctx, id: string, opts: { expectedVersion?: number } = {}) {
   const row = await loadRow(ctx, id);
   assertCanEdit(ctx, row);
   assertVersion(row, opts.expectedVersion);
@@ -621,3 +626,23 @@ export async function rerenderWorkspacePosts(db: DbOrTx, workspaceId: string) {
     .where(eq(posts.workspaceId, workspaceId));
   for (const r of rows) await syncRendered(db, ws, r.id);
 }
+
+/* ---------- public, transactional entry points ---------- */
+
+export const createPost = (ctx: Ctx, raw: z.input<typeof CreatePostInput>) =>
+  inTx(ctx, (c) => createPostImpl(c, raw));
+export const updatePost = (
+  ctx: Ctx,
+  id: string,
+  raw: z.input<typeof UpdatePostInput>,
+  opts: { expectedVersion?: number } = {},
+) => inTx(ctx, (c) => updatePostImpl(c, id, raw, opts));
+export const publishPost = (
+  ctx: Ctx,
+  id: string,
+  opts: { at?: Date | string | null; expectedVersion?: number } = {},
+) => inTx(ctx, (c) => publishPostImpl(c, id, opts));
+export const unpublishPost = (ctx: Ctx, id: string, opts: { expectedVersion?: number } = {}) =>
+  inTx(ctx, (c) => unpublishPostImpl(c, id, opts));
+export const deletePost = (ctx: Ctx, id: string, opts: { expectedVersion?: number } = {}) =>
+  inTx(ctx, (c) => deletePostImpl(c, id, opts));

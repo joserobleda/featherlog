@@ -8,10 +8,11 @@
     "build": "node scripts/copy-widget.mjs && next build",
     "start": "next start -p 3100",
     "typecheck": "tsc --noEmit -p .",
-    "seed": "tsx scripts/seed.ts",
+    "seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts",
     "worker": "tsx worker.ts",
-    "build:worker": "esbuild worker.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/worker.mjs --tsconfig=tsconfig.json --external:sharp --external:pg-native --banner:js=\"import{createRequire}from'module';const require=createRequire(import.meta.url);\"",
-    "e2e": "playwright test"
+    "build:worker": "esbuild worker.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/worker.mjs --tsconfig=tsconfig.json --external:sharp --external:pg-native --banner:js=\"import{createRequire}from'module';const require=createRequire(import.meta.url);\" && esbuild scripts/create-api-key.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/create-api-key.mjs --tsconfig=tsconfig.json --banner:js=\"import{createRequire}from'module';const require=createRequire(import.meta.url);\"",
+    "e2e": "playwright test",
+    "create-api-key": "tsx --env-file-if-exists=.env.local scripts/create-api-key.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.900.0",
@@ -51,17 +52,18 @@
     "sharp": "^0.35.5",
     "sonner": "^2.0.0",
     "tailwind-merge": "^3.3.0",
+    "undici": "^8.11.2",
     "zod": "^4.6.5"
   },
   "devDependencies": {
     "@modelcontextprotocol/client": "^2.3.0",
+    "@playwright/test": "1.63.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/nodemailer": "^7.0.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
-    "tailwindcss": "^4.3.3",
-    "tsx": "^4.20.0",
     "esbuild": "^0.28.2",
-    "@playwright/test": "1.63.0"
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.20.0"
   }
 }

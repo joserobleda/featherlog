@@ -25,7 +25,7 @@ Raw HTML is not allowed: HTML tags are removed from the output.
 - \`![Alt text](https://example.com/image.png)\` (http/https URLs only)
 - Size in pixels: \`![Alt](image.png =300x200)\`
 - Width only, auto height: \`![Alt](image.png =300x*)\`
-- Other units: \`![Alt](image.png =80%x5em)\` (px, %, em, rem, vw, vh)
+- Other units: \`![Alt](image.png =80%x5em)\` (px, %, em, rem, ch, vw, vh)
 
 ## Videos
 Paste a YouTube, Vimeo, Loom or Wistia URL on its own line (or at the end of a line of

@@ -1,4 +1,4 @@
-# Servicios para desarrollo local: `pnpm services`
+# Local development services: `pnpm services`
 name: featherlog-dev
 services:
   postgres:

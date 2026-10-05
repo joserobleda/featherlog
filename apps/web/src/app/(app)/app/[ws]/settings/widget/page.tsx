@@ -38,11 +38,14 @@ export default async function WidgetSettingsPage({ params }: { params: Promise<{
 
 // ${t("snippetSpaComment")}
 useEffect(() => {
-  window.Featherlog?.init({
+  const config = {
     selector: ".featherlog-badge",
     account: "${workspace.publicId}",
     // language: "es", // ${t("snippetLanguageComment")}
-  });
+  };
+  // If the script hasn't loaded yet, it picks up HW_config and initializes itself.
+  if (window.Featherlog) window.Featherlog.init(config);
+  else window.HW_config = config;
   return () => window.Featherlog?.destroy();
 }, []);`;
 

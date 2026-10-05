@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { memoryRateLimiter } from "../src/server/api/rate-limit";
 import { etagOf, expectedVersionFrom } from "../src/server/api/serializers";
-import { fetchPublicUrl } from "../src/server/api/ssrf";
+import { fetchPublicUrl, isBlockedAddress } from "../src/server/api/ssrf";
 
 describe("ETag helpers", () => {
   it("round-trips post versions through ETag / If-Match", () => {
@@ -34,4 +34,24 @@ describe("SSRF guard", () => {
   ])("refuses %s", async (url) => {
     await expect(fetchPublicUrl(url, 1024)).rejects.toThrow();
   });
+});
+
+describe("blocked address ranges", () => {
+  it.each([
+    "127.0.0.1",
+    "10.1.2.3",
+    "172.20.0.1",
+    "192.168.1.1",
+    "169.254.169.254",
+    "100.64.0.1",
+    "::1",
+    "fd00::1",
+    "fe80::1",
+    "::ffff:172.16.0.1",
+    "::ffff:169.254.169.254",
+    "64:ff9b::a00:1",
+  ])("blocks %s", (ip) => expect(isBlockedAddress(ip)).toBe(true));
+  it.each(["8.8.8.8", "1.1.1.1", "2606:4700:4700::1111"])("allows %s", (ip) =>
+    expect(isBlockedAddress(ip)).toBe(false),
+  );
 });

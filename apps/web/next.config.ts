@@ -32,13 +32,23 @@ const nextConfig: NextConfig = {
           { key: "Cache-Control", value: "public, max-age=3600, stale-while-revalidate=86400" },
         ],
       },
-      {
-        source: "/app/:path*",
+      // Dashboard, auth and OAuth consent pages must never be framed (clickjacking).
+      ...[
+        "/app/:path*",
+        "/login",
+        "/signup",
+        "/verify",
+        "/forgot-password",
+        "/reset-password",
+        "/invite/:path*",
+        "/oauth/:path*",
+      ].map((source) => ({
+        source,
         headers: [
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },
         ],
-      },
+      })),
     ];
   },
 };

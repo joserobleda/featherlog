@@ -31,7 +31,6 @@ const schema = z.object({
   WORKER_MODE: z.enum(["inline", "separate", "off"]).default("inline"),
   MIGRATE_ON_START: bool,
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),
-  SENTRY_DSN: z.string().optional(),
 });
 
 function load() {

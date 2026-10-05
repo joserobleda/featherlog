@@ -583,6 +583,7 @@ api.openapi(
     const post = await deleteTranslation(ctx(c), id, locale, {
       expectedVersion: expectedVersionFrom(c.req.header("if-match")),
     });
+    c.header("ETag", etagOf(post));
     return c.json(serializePost(ws(c), post), 200);
   },
 );
@@ -618,6 +619,7 @@ api.openapi(
         at: body.at ?? null,
         expectedVersion: expectedVersionFrom(c.req.header("if-match")),
       });
+      c.header("ETag", etagOf(post));
       return { status: 200, body: serializePost(ws(c), post) };
     });
   },
@@ -649,6 +651,7 @@ api.openapi(
       const post = await schedulePost(ctx(c), c.req.valid("param").id, body.publishAt, {
         expectedVersion: expectedVersionFrom(c.req.header("if-match")),
       });
+      c.header("ETag", etagOf(post));
       return { status: 200, body: serializePost(ws(c), post) };
     });
   },
@@ -668,6 +671,7 @@ api.openapi(
     const post = await unpublishPost(ctx(c), c.req.valid("param").id, {
       expectedVersion: expectedVersionFrom(c.req.header("if-match")),
     });
+    c.header("ETag", etagOf(post));
     return c.json(serializePost(ws(c), post), 200);
   },
 );
