@@ -32,6 +32,20 @@ describe("members & invitations", () => {
     });
   });
 
+  it("optionally checks the accepting user's email against the invitation", async () => {
+    const f = await workspaceFixture(t.db);
+    const { token } = await inviteMember(f.owner, { email: "Invitee@Example.com" });
+    const uid = await createUser(t.db, "Invitee", "invitee@example.com");
+    await expect(
+      acceptInvitation(t.db, token, uid, { email: "someone@example.com" }),
+    ).rejects.toMatchObject({ code: "forbidden" });
+    // Still pending after a rejected attempt.
+    expect(await findInvitation(t.db, token)).not.toBeNull();
+    expect((await listMembers(t.db, f.ws.id)).map((m) => m.userId)).not.toContain(uid);
+    await acceptInvitation(t.db, token, uid, { email: "INVITEE@example.com" });
+    expect((await listMembers(t.db, f.ws.id)).map((m) => m.userId)).toContain(uid);
+  });
+
   it("protects the last owner and owner-only grants", async () => {
     const f = await workspaceFixture(t.db);
     const adminId = await createUser(t.db);

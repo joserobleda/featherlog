@@ -1,0 +1,13 @@
+# Automatic HTTPS for Featherlog. One domain serves dashboard, public pages, widget, API and MCP.
+# To split hosts (e.g. widget.example.com), add more site blocks pointing at the same upstream
+# and set PUBLIC_URL / WIDGET_URL accordingly.
+{
+	email {$ACME_EMAIL}
+}
+
+{$APP_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app:3000 {
+		header_up X-Forwarded-Proto {scheme}
+	}
+}

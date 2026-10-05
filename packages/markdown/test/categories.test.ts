@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { categoryTextColor, extractCategoryNames, renderMarkdown } from "../src";
+import { categoryTextColor, extractCategoryNames, type MdCategory, renderMarkdown } from "../src";
 import { html } from "./helpers";
 
 const categories = [
@@ -89,6 +89,59 @@ describe("inline categories", () => {
     expect(r.html).toBe(
       '<p class="fl-categories"><span class="fl-category" data-category-id="x&#x22;y">Evil &#x3C;b</span></p>',
     );
+  });
+});
+
+describe("category aliases", () => {
+  const es: MdCategory[] = [
+    { id: "c-new", name: "Nuevo", color: "#22c55e", aliases: ["New", "Nouveau"] },
+    { id: "c-fix", name: "Corrección", color: "#1e3a8a", aliases: ["Fix"] },
+  ];
+  const renderEs = (md: string, cats: MdCategory[] = es) =>
+    renderMarkdown(md, { categories: cats, highlight: false });
+
+  it("matches aliases case-insensitively and displays the primary name", async () => {
+    const r = await renderEs("[new] [FIX] [nouveau]\n\nHola");
+    expect(r.categoryIds).toEqual(["c-new", "c-fix"]);
+    expect(r.html).toContain(">Nuevo</span>");
+    expect(r.html).toContain(">Corrección</span>");
+    expect(r.html).not.toContain(">New</span>");
+    expect(r.html.match(/class="fl-category"/g)).toHaveLength(2);
+  });
+
+  it("still matches primary names", async () => {
+    expect((await renderEs("[nuevo]")).categoryIds).toEqual(["c-new"]);
+  });
+
+  it("prefers primary names over aliases, and earlier aliases over later ones", async () => {
+    const cats = [
+      { id: "a", name: "Alpha", color: "#000000", aliases: ["Beta", "Gamma"] },
+      { id: "b", name: "Beta", color: "#000000", aliases: ["Delta"] },
+      { id: "c", name: "Charlie", color: "#000000", aliases: ["Delta2", "Gamma"] },
+      { id: "d", name: "Dog", color: "#000000", aliases: ["Gamma"] },
+    ];
+    expect((await renderEs("[beta]", cats)).categoryIds).toEqual(["b"]);
+    // "Gamma" is alias #1 of "a" but alias #0 of "d" → "d" wins.
+    expect((await renderEs("[gamma]", cats)).categoryIds).toEqual(["d"]);
+  });
+
+  it("does not match a display-only name at primary priority with matchName: false", async () => {
+    const cats = [
+      { id: "a", name: "Mix", color: "#000000", aliases: ["Mix"], matchName: false },
+      { id: "b", name: "Other", color: "#000000", aliases: ["Mix"] },
+      { id: "c", name: "Mix", color: "#000000", matchName: false },
+    ];
+    // Both "a" and "b" list "Mix" as alias #0; "a" comes first. "c" never matches "Mix".
+    const r = await renderEs("[mix]", cats);
+    expect(r.categoryIds).toEqual(["a"]);
+    expect(r.html).toContain(">Mix</span>");
+    const onlyC = await renderEs("[mix]", [cats[2]!]);
+    expect(onlyC.categoryIds).toEqual([]);
+  });
+
+  it("ignores empty aliases", async () => {
+    const cats = [{ id: "a", name: "Alpha", color: "#000000", aliases: ["", "  "] }];
+    expect((await renderEs("[Alpha]", cats)).categoryIds).toEqual(["a"]);
   });
 });
 

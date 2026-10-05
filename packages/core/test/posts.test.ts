@@ -5,7 +5,9 @@ import {
   countPostsByStatus,
   createPost,
   deletePost,
+  deleteTranslation,
   getPost,
+  ListPostsInput,
   listPosts,
   publishPost,
   schedulePost,
@@ -179,6 +181,55 @@ describe("posts", () => {
     expect(page.items).toHaveLength(2);
     const rest = await listPosts(f.owner, { limit: 2, cursor: page.nextCursor! });
     expect(rest.items).toHaveLength(1);
+  });
+
+  it("refuses to delete the last translation", async () => {
+    const f = await workspaceFixture(t.db, { locales: ["en", "es"] });
+    const p = await createPost(f.owner, {
+      translations: { en: { title: "Hello" }, es: { title: "Hola" } },
+    });
+    const onlyEn = await deleteTranslation(f.owner, p.id, "es");
+    expect(Object.keys(onlyEn.translations)).toEqual(["en"]);
+    await expect(deleteTranslation(f.owner, p.id, "en")).rejects.toMatchObject({
+      code: "validation",
+    });
+    expect(Object.keys((await getPost(f.owner, p.id)).translations)).toEqual(["en"]);
+  });
+
+  it("filters panel posts by locale and missing locale", async () => {
+    const f = await workspaceFixture(t.db, { locales: ["en", "es"] });
+    await createPost(f.owner, { translations: { en: { title: "EN only" } } });
+    await createPost(f.owner, { translations: { es: { title: "ES only" } } });
+    await createPost(f.owner, {
+      translations: { en: { title: "Both" }, es: { title: "Ambos" } },
+    });
+    const titles = (items: { translations: Record<string, { title: string }> }[]) =>
+      items.map((p) => Object.values(p.translations)[0]?.title);
+    const missingEs = await listPosts(f.owner, { missingLocale: "es" });
+    expect(titles(missingEs.items)).toEqual(["EN only"]);
+    const missingEn = await listPosts(f.owner, { missingLocale: "en" });
+    expect(titles(missingEn.items)).toEqual(["ES only"]);
+    const withEs = await listPosts(f.owner, { locale: "es" });
+    expect(withEs.items).toHaveLength(2);
+    expect(withEs.items.every((p) => p.translations.es)).toBe(true);
+    expect(() => ListPostsInput.parse({ missingLocale: "xx" })).toThrow();
+  });
+
+  it("builds excerpts without category chips, embeds or stray spaces", async () => {
+    const f = await workspaceFixture(t.db);
+    const p = await createPost(f.owner, {
+      translations: {
+        en: {
+          title: "Dark",
+          contentMd:
+            "[New] [Fix]\n\nhttps://www.youtube.com/watch?v=dQw4w9WgXcQ\n\nTurn on **dark mode**.",
+        },
+      },
+    });
+    expect(p.categoryIds).toHaveLength(2);
+    expect(p.translations.en?.contentHtml).toContain("fl-video");
+    expect(p.translations.en?.excerpt).toBe("Turn on dark mode.");
+    expect(p.translations.en?.text).toBe("Turn on dark mode.");
   });
 
   it("soft-deletes posts", async () => {

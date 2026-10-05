@@ -112,7 +112,7 @@ async function toPublic(
         .sort((x, y) => x.position - y.position)
         .map((c) => ({
           id: c.id,
-          name: categoryName(c, t.locale, ws.defaultLocale),
+          name: categoryName(c, locale, ws.defaultLocale),
           slug: categorySlug(c, locale, ws.defaultLocale),
           color: c.color,
         })),

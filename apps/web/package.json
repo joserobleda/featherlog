@@ -9,7 +9,8 @@
     "start": "next start -p 3100",
     "typecheck": "tsc --noEmit -p .",
     "seed": "tsx scripts/seed.ts",
-    "worker": "tsx worker.ts"
+    "worker": "tsx worker.ts",
+    "build:worker": "esbuild worker.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/worker.mjs --tsconfig=tsconfig.json --external:sharp --external:pg-native --banner:js=\"import{createRequire}from'module';const require=createRequire(import.meta.url);\""
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.900.0",
@@ -58,6 +59,7 @@
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "tailwindcss": "^4.3.3",
-    "tsx": "^4.20.0"
+    "tsx": "^4.20.0",
+    "esbuild": "^0.28.2"
   }
 }

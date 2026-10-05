@@ -98,6 +98,45 @@ describe("text and excerpt", () => {
     expect(r.excerpt).toBe(r.text);
   });
 
+  it("does not add spaces around inline formatting", async () => {
+    const r = await renderMarkdown(
+      "Turn on **dark mode**. Try *it*, `now`! See [docs](https://x.dev)? ~~old~~; H<sub>2</sub>O",
+      { highlight: false },
+    );
+    expect(r.text).toBe("Turn on dark mode. Try it, now! See docs? old; H2O");
+    expect(r.excerpt).toBe(r.text);
+  });
+
+  it("separates block-level elements and line breaks with spaces", async () => {
+    const r = await renderMarkdown(
+      "> quoted\n\n| a | b |\n| - | - |\n| c | d |\n\nline one  \nline two\n\n1. **bold**\n2. item",
+      { highlight: false },
+    );
+    expect(r.text).toBe("quoted a b c d line one line two bold item");
+  });
+
+  it("keeps inline code text intact with highlighting on", async () => {
+    const r = await renderMarkdown("Run `pnpm dev`.\n\n```js\nconst a = 1;\nconst b = 2;\n```", {});
+    expect(r.text).toBe("Run pnpm dev. const a = 1; const b = 2;");
+  });
+
+  it("skips category chips and embeds in the excerpt", async () => {
+    const r = await renderMarkdown(
+      "[New] [Fix]\n\nhttps://www.youtube.com/watch?v=dQw4w9WgXcQ\n\nTurn on **dark mode**.",
+      {
+        highlight: false,
+        categories: [
+          { id: "n", name: "New", color: "#000000" },
+          { id: "f", name: "Fix", color: "#000000" },
+        ],
+      },
+    );
+    expect(r.html).toContain("fl-categories");
+    expect(r.html).toContain("fl-video");
+    expect(r.text).toBe("Turn on dark mode.");
+    expect(r.excerpt).toBe("Turn on dark mode.");
+  });
+
   it("truncates long excerpts", async () => {
     const r = await renderMarkdown("word ".repeat(100), { highlight: false });
     expect(r.excerpt.length).toBeLessThanOrEqual(161);

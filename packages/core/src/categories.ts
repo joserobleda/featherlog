@@ -29,7 +29,11 @@ export const UpdateCategoryInput = z.object({
     .string()
     .regex(/^#[0-9a-fA-F]{6}$/)
     .optional(),
-  names: names.optional(),
+  /** Names to set per locale; `null` removes that locale's name (at least one must remain). */
+  names: z
+    .record(z.string(), z.string().trim().min(1).max(40).nullable())
+    .refine((r) => Object.keys(r).every(isLocale), "Unsupported locale")
+    .optional(),
 });
 
 export async function listCategories(db: DbOrTx, workspaceId: string): Promise<Category[]> {
@@ -97,7 +101,10 @@ async function assertUniqueNames(
       (c) => c.id !== exceptId && c.names[locale]?.toLowerCase() === name.toLowerCase(),
     );
     if (clash)
-      throw new AppError("conflict", `A category named "${name}" already exists`, { locale });
+      throw new AppError("conflict", `A category named "${name}" already exists`, {
+        field: `names.${locale}`,
+        locale,
+      });
   }
 }
 
@@ -130,17 +137,35 @@ export async function updateCategory(
 ) {
   assertCan(ctx, "categories:write");
   const input = UpdateCategoryInput.parse(raw);
-  await getCategory(ctx.db, ctx.workspaceId, id);
+  const current = await getCategory(ctx.db, ctx.workspaceId, id);
+  const set: Record<string, string> = {};
+  const removed: string[] = [];
+  for (const [locale, name] of Object.entries(input.names ?? {})) {
+    if (name === null) removed.push(locale);
+    else set[locale] = name;
+  }
+  if (input.names) {
+    const remaining = new Set([...Object.keys(current.names), ...Object.keys(set)]);
+    for (const locale of removed) remaining.delete(locale);
+    if (remaining.size === 0) {
+      throw new AppError("validation", "A category needs at least one name", { field: "names" });
+    }
+    await assertUniqueNames(ctx.db, ctx.workspaceId, set, id);
+  }
   if (input.color) {
     await ctx.db
       .update(categories)
       .set({ color: input.color.toUpperCase() })
       .where(and(eq(categories.id, id), eq(categories.workspaceId, ctx.workspaceId)));
   }
-  if (input.names) {
-    await assertUniqueNames(ctx.db, ctx.workspaceId, input.names, id);
-    await writeNames(ctx.db, id, input.names);
+  if (removed.length > 0) {
+    await ctx.db
+      .delete(categoryTranslations)
+      .where(
+        and(eq(categoryTranslations.categoryId, id), inArray(categoryTranslations.locale, removed)),
+      );
   }
+  if (Object.keys(set).length > 0) await writeNames(ctx.db, id, set);
   return getCategory(ctx.db, ctx.workspaceId, id);
 }
 

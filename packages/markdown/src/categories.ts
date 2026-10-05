@@ -1,6 +1,23 @@
 import type { Paragraph } from "mdast";
 
-export type MdCategory = { id: string; name: string; color: string; slug?: string };
+export type MdCategory = {
+  id: string;
+  /** Display name (shown in the rendered chip) and primary marker name. */
+  name: string;
+  color: string;
+  slug?: string;
+  /**
+   * Other names that also match a `[Marker]` (case-insensitive), e.g. the category's name in
+   * other locales. Primary names of any category win over aliases; earlier aliases win over later.
+   */
+  aliases?: string[];
+  /**
+   * Whether `name` itself matches markers at primary priority. Default `true`. Set to `false`
+   * when `name` is only a display fallback (e.g. no name in the translation's locale); list it in
+   * `aliases` at the right priority instead.
+   */
+  matchName?: boolean;
+};
 
 const LINE_RE = /^\s*(?:\[[^[\]\n]+\]\s*)+$/;
 const NAME_RE = /\[([^[\]\n]+)\]/g;

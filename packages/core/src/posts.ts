@@ -6,7 +6,7 @@ import {
   postTranslations,
   user,
 } from "@featherlog/db";
-import { renderMarkdown } from "@featherlog/markdown";
+import { type MdCategory, renderMarkdown } from "@featherlog/markdown";
 import { and, desc, eq, exists, ilike, inArray, isNull, lt, or, type SQL, sql } from "drizzle-orm";
 import { z } from "zod";
 import { actorLabel, actorUserId, assertCan, type Ctx, can } from "./auth";
@@ -157,8 +157,27 @@ async function hydrate(db: DbOrTx, rows: (typeof posts.$inferSelect)[]): Promise
   }));
 }
 
-function mdCategories(cats: Category[], locale: string, fallback: string) {
-  return cats.map((c) => ({ id: c.id, name: categoryName(c, locale, fallback), color: c.color }));
+/**
+ * Categories for rendering a translation in `locale`. The chip shows the name in `locale`; markers
+ * may also use the default-locale name or any other locale's name (in that priority order).
+ */
+function mdCategories(cats: Category[], locale: string, fallback: string): MdCategory[] {
+  return cats.map((c) => {
+    const own = c.names[locale];
+    const others = Object.entries(c.names)
+      .filter(([l]) => l !== locale && l !== fallback)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([, n]) => n);
+    const aliases = [c.names[fallback], ...others].filter((n): n is string => !!n && n !== own);
+    return {
+      id: c.id,
+      name: categoryName(c, locale, fallback),
+      color: c.color,
+      aliases,
+      // Without a name in this locale the display name is a fallback: match it as an alias only.
+      matchName: own !== undefined,
+    };
+  });
 }
 
 async function renderTranslation(
@@ -298,15 +317,13 @@ export async function createPost(ctx: Ctx, raw: z.input<typeof CreatePostInput>)
     actorLabel: actorLabel(ctx.actor),
   });
   for (const [locale, t] of Object.entries(input.translations)) {
-    await ctx.db
-      .insert(postTranslations)
-      .values({
-        postId: id,
-        locale,
-        title: t.title,
-        slug: slugify(t.title),
-        contentMd: t.contentMd,
-      });
+    await ctx.db.insert(postTranslations).values({
+      postId: id,
+      locale,
+      title: t.title,
+      slug: slugify(t.title),
+      contentMd: t.contentMd,
+    });
   }
   await syncRendered(ctx.db, ws, id);
   const post = await getPost(ctx, id);

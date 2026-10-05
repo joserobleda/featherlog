@@ -1,0 +1,52 @@
+# Production / self-hosting: `docker compose -f docker/compose.yml up -d`
+# Copy deploy/.env.example to .env next to this file and fill it in.
+name: featherlog
+services:
+  app:
+    image: ${FEATHERLOG_IMAGE:-ghcr.io/joserobleda/featherlog:latest}
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://featherlog:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}@postgres:5432/featherlog
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - uploads:/data/uploads
+    ports:
+      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-3000}:3000"
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: featherlog
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+      POSTGRES_DB: featherlog
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U featherlog"]
+      interval: 5s
+      retries: 20
+
+  # Optional: automatic HTTPS. Enable with `--profile caddy` and set APP_DOMAIN.
+  caddy:
+    image: caddy:2-alpine
+    profiles: ["caddy"]
+    restart: unless-stopped
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:-localhost}
+      ACME_EMAIL: ${ACME_EMAIL:-}
+    volumes:
+      - ../deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on: [app]
+
+volumes:
+  pgdata:
+  uploads:
+  caddy_data:
+  caddy_config:

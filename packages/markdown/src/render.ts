@@ -337,6 +337,39 @@ function transformHast(tree: HastRoot, ctx: Context, baseUrl: string | undefined
 // Text extraction
 // ---------------------------------------------------------------------------
 
+/** Elements that flow inline with text: they must not add whitespace around their content. */
+const INLINE_TAGS = new Set([
+  "a",
+  "abbr",
+  "b",
+  "bdi",
+  "bdo",
+  "cite",
+  "code",
+  "data",
+  "del",
+  "dfn",
+  "em",
+  "i",
+  "img",
+  "input",
+  "ins",
+  "kbd",
+  "mark",
+  "q",
+  "s",
+  "samp",
+  "small",
+  "span",
+  "strike",
+  "strong",
+  "sub",
+  "sup",
+  "time",
+  "u",
+  "var",
+]);
+
 function plainText(tree: HastRoot): string {
   const parts: string[] = [];
   const walk = (nodes: HastRoot["children"] | ElementContent[]) => {
@@ -347,9 +380,14 @@ function plainText(tree: HastRoot): string {
           parts.push(" ");
           continue;
         }
-        if (node.tagName === "br") parts.push(" ");
+        if (node.tagName === "br") {
+          parts.push(" ");
+          continue;
+        }
+        const block = !INLINE_TAGS.has(node.tagName);
+        if (block) parts.push(" ");
         walk(node.children);
-        if (node.tagName !== "span" && node.tagName !== "a") parts.push(" ");
+        if (block) parts.push(" ");
       }
     }
   };
@@ -364,10 +402,15 @@ function plainText(tree: HastRoot): string {
 export async function renderMarkdown(md: string, opts: RenderOptions = {}): Promise<RenderResult> {
   const source = preprocessSizing(md ?? "");
   const categoriesByName = new Map<string, MdCategory>();
-  for (const cat of opts.categories ?? []) {
-    const key = normalizeCategoryName(cat.name);
+  const cats = opts.categories ?? [];
+  const register = (name: string | undefined, cat: MdCategory) => {
+    const key = normalizeCategoryName(name ?? "");
     if (key && !categoriesByName.has(key)) categoriesByName.set(key, cat);
-  }
+  };
+  // Primary names first, then aliases by position (so earlier aliases take priority).
+  for (const cat of cats) if (cat.matchName !== false) register(cat.name, cat);
+  const maxAliases = Math.max(0, ...cats.map((c) => c.aliases?.length ?? 0));
+  for (let i = 0; i < maxAliases; i++) for (const cat of cats) register(cat.aliases?.[i], cat);
   const ctx: Context = {
     nonce: makeNonce(),
     embeds: new Map(),

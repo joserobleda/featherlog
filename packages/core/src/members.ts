@@ -119,9 +119,20 @@ export async function findInvitation(db: DbOrTx, token: string) {
   return row ?? null;
 }
 
-export async function acceptInvitation(db: DbOrTx, token: string, userId: string) {
+export async function acceptInvitation(
+  db: DbOrTx,
+  token: string,
+  userId: string,
+  opts: { email?: string } = {},
+) {
   const found = await findInvitation(db, token);
   if (!found) throw new AppError("not_found", "This invitation is invalid or has expired");
+  if (
+    opts.email !== undefined &&
+    found.invitation.email.trim().toLowerCase() !== opts.email.trim().toLowerCase()
+  ) {
+    throw forbidden("This invitation was sent to a different email address");
+  }
   await db
     .insert(memberships)
     .values({ workspaceId: found.invitation.workspaceId, userId, role: found.invitation.role })
