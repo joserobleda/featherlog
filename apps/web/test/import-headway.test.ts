@@ -306,7 +306,7 @@ ${i.img ? `<p><img src="${i.img}" alt="shot"/></p>` : ""}<p>${i.body}</p></div>
     expect(post.translations.es?.contentMd).toContain("http://localhost:3100/uploads/images/");
     expect(post.translations.es?.contentMd).not.toContain("cloud.headwayapp.co");
     const again = await importHeadway(base);
-    expect(again).toMatchObject({ created: 0, translationsAdded: 0 });
+    expect(again).toMatchObject({ created: 0, translationsAdded: 0, images: 0 });
   });
 
   it("refuses workspaces without the needed languages", async () => {

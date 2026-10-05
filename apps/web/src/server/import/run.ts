@@ -143,11 +143,12 @@ export async function importHeadway(opts: HeadwayImportOptions): Promise<Headway
         imported: await findImportedPost(opts.db, ws.id, sourceKey(e.account), e.id),
       })),
     );
-    const extras = entries
-      .flatMap(([, e]) => extrasByEntry.get(e.id) ?? [])
-      .filter((x) => !g.items[x.locale]);
     const todo = existing.filter((x) => !x.imported);
     const already = existing.find((x) => x.imported)?.imported;
+    const post = already ? await getPost(ctx, already.postId) : null;
+    const extras = entries
+      .flatMap(([, e]) => extrasByEntry.get(e.id) ?? [])
+      .filter((x) => !g.items[x.locale] && !post?.translations[x.locale]);
 
     await rehost(
       todo.map((x) => x.e),
@@ -161,9 +162,8 @@ export async function importHeadway(opts: HeadwayImportOptions): Promise<Headway
       extras.map((x) => [x.locale, { title: x.title, contentMd: withImages(x.contentMd) }]),
     );
 
-    if (already) {
+    if (already && post) {
       // Part of the group was imported earlier: add missing languages (late pairs or extra translations).
-      const post = await getPost(ctx, already.postId);
       for (const x of todo) {
         await setTranslation(ctx, already.postId, x.locale, translation(x.e));
         await recordImport(opts.db, {
@@ -176,15 +176,13 @@ export async function importHeadway(opts: HeadwayImportOptions): Promise<Headway
         result.translationsAdded++;
       }
       for (const [locale, t] of Object.entries(extraTranslations)) {
-        if (post.translations[locale]) continue;
         await setTranslation(ctx, already.postId, locale, t);
         result.translationsAdded++;
       }
-      if (todo.length === 0 && Object.keys(extraTranslations).every((l) => post.translations[l]))
-        result.skipped++;
+      if (todo.length === 0 && extras.length === 0) result.skipped++;
       continue;
     }
-    const post = await createPost(ctx, {
+    const created = await createPost(ctx, {
       translations: {
         ...extraTranslations,
         ...Object.fromEntries(todo.map((x) => [x.locale, translation(x.e)])),
@@ -198,7 +196,7 @@ export async function importHeadway(opts: HeadwayImportOptions): Promise<Headway
         workspaceId: ws.id,
         source: sourceKey(x.e.account),
         externalId: x.e.id,
-        postId: post.id,
+        postId: created.id,
         locale: x.locale,
       });
     }
