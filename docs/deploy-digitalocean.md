@@ -46,12 +46,12 @@ USE_CADDY=1
 SIGNUP_MODE=invite
 ```
 
-For a company instance, let colleagues join on their own and land in the right workspace:
+For a company instance, let colleagues join on their own and land in the right workspace. The domain rule needs proven addresses, so pair it with Google sign-in (no email provider needed) or SMTP verification:
 
 ```sh
 ALLOWED_EMAIL_DOMAINS=example.com
 AUTO_JOIN_WORKSPACE=example        # workspace slug
-# optional: passwordless sign-in with your Google Workspace
+# Google Workspace sign-in (OAuth client redirect URI: https://<APP_DOMAIN>/api/auth/callback/google)
 GOOGLE_CLIENT_ID=…
 GOOGLE_CLIENT_SECRET=…
 ```

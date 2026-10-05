@@ -18,7 +18,7 @@ Boolean variables accept `true`/`1` (on) and `false`/`0`/empty (off).
 | `PUBLIC_URL` | `APP_URL` | Host for the public changelog pages (`/<slug>`), RSS and sitemaps. See [separate hosts](self-hosting.md#separate-hosts-for-public-pages-and-widget). |
 | `WIDGET_URL` | `APP_URL` | Host for `widget.js`, the widget iframe (`/_widget/…`) and the widget JSON (`/api/widget/…`). |
 | `SIGNUP_MODE` | `open` | `open`: anyone can sign up. `invite`: only email addresses with an invitation. `closed`: nobody. The first user can always sign up. |
-| `ALLOWED_EMAIL_DOMAINS` | — | Comma-separated email domains that can always sign up, whatever `SIGNUP_MODE` says (e.g. your company domain). Combine with Google sign-in for a passwordless company instance. |
+| `ALLOWED_EMAIL_DOMAINS` | — | Comma-separated email domains that can always sign up, whatever `SIGNUP_MODE` says (e.g. your company domain). Only applies to proven addresses: Google sign-in, or email verification (production with `SMTP_URL`). With neither, it has no effect — otherwise anyone could claim an address on your domain. |
 | `AUTO_JOIN_WORKSPACE` | — | Slug of a workspace that new users from `ALLOWED_EMAIL_DOMAINS` join automatically as editors. |
 | `LOG_LEVEL` | `info` | `fatal`, `error`, `warn`, `info`, `debug` or `trace` (pino). |
 

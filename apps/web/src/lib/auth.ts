@@ -22,8 +22,8 @@ import { sendMailSafe } from "./mailer";
  */
 
 /** New users from an allowed domain join AUTO_JOIN_WORKSPACE as editors (zero-touch onboarding). */
-async function autoJoin(userId: string, email: string) {
-  if (!env.AUTO_JOIN_WORKSPACE || !env.allowedEmailDomains.includes(domainOf(email))) return;
+async function autoJoin(userId: string, email: string, emailVerified: boolean) {
+  if (!env.AUTO_JOIN_WORKSPACE || !trustsDomain(email, emailVerified)) return;
   const [ws] = await db
     .select({ id: schema.workspaces.id })
     .from(schema.workspaces)
@@ -36,10 +36,23 @@ async function autoJoin(userId: string, email: string) {
 }
 const domainOf = (email: string) => email.split("@").pop()?.toLowerCase() ?? "";
 
-async function assertSignupAllowed(email: string, inviteToken?: string | null) {
+/**
+ * The domain rule only applies to proven addresses: verified by an identity provider (Google), or
+ * by our own verification email (production with SMTP). Otherwise anyone could claim one.
+ */
+function trustsDomain(email: string, emailVerified: boolean) {
+  if (!env.allowedEmailDomains.includes(domainOf(email))) return false;
+  return emailVerified || (env.emailEnabled && env.NODE_ENV === "production");
+}
+
+async function assertSignupAllowed(
+  email: string,
+  emailVerified: boolean,
+  inviteToken?: string | null,
+) {
   const [{ value: users } = { value: 0 }] = await db.select({ value: count() }).from(schema.user);
   if (users === 0 || env.SIGNUP_MODE === "open") return;
-  if (env.allowedEmailDomains.includes(domainOf(email))) return;
+  if (trustsDomain(email, emailVerified)) return;
   if (env.SIGNUP_MODE === "invite") {
     if (inviteToken) {
       const inv = await findInvitation(db, inviteToken);
@@ -108,11 +121,11 @@ export const auth = betterAuth({
         before: async (user, ctx) => {
           const inviteToken =
             (ctx?.body as { inviteToken?: string } | undefined)?.inviteToken ?? null;
-          await assertSignupAllowed(user.email, inviteToken);
+          await assertSignupAllowed(user.email, Boolean(user.emailVerified), inviteToken);
           return { data: user };
         },
         after: async (user) => {
-          await autoJoin(user.id, user.email);
+          await autoJoin(user.id, user.email, Boolean(user.emailVerified));
         },
       },
     },
