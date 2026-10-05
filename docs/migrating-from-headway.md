@@ -2,6 +2,33 @@
 
 Featherlog's widget understands Headway's snippet format, so for most sites the switch takes a few minutes.
 
+
+## Importing your posts
+
+Featherlog can import every published entry from public Headway changelogs, including their
+categories, publication dates and images (re-hosted on your Featherlog instance). If you ran one
+Headway account per language, list them all: entries published on the same day are paired as
+translations of a single post.
+
+1. Create the workspace and enable the languages you need (Settings → Languages). Add the category
+   names in each language (Settings → Categories) — Headway labels such as `[New]` are matched
+   against them.
+2. Preview the import (nothing is written):
+
+   ```sh
+   docker compose exec app featherlog import-headway --workspace acme \
+     --source acme-changelog:en --source acme-es-updates:es --dry-run
+   ```
+
+   The first `--source` is the primary language. The report lists every post with its paired
+   translations and flags the matches worth reviewing (same day with several entries, or a few days
+   apart). Fix them with `--pair <id>:<id>` or `--unpair <id>` (ids are shown in the report).
+3. Run it again without `--dry-run`. Re-running is safe: entries already imported are skipped, and a
+   newly paired translation is added to the existing post.
+
+From a repository checkout the same command is `pnpm --filter @featherlog/web import-headway …`.
+Drafts and scheduled entries aren't public on Headway, so they aren't imported.
+
 ## 1. Create your workspace
 
 Sign up on your Featherlog instance (or [self-host one](self-hosting.md)) and create a workspace. The workspace slug becomes your public changelog URL: `<PUBLIC_URL>/<slug>`.

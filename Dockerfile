@@ -41,6 +41,7 @@ COPY --from=build --chown=node:node /repo/apps/web/.next/static ./apps/web/.next
 COPY --from=build --chown=node:node /repo/apps/web/public ./apps/web/public
 COPY --from=build --chown=node:node /repo/apps/web/dist/worker.mjs ./apps/web/worker.mjs
 COPY --from=build --chown=node:node /repo/apps/web/dist/create-api-key.mjs ./apps/web/create-api-key.mjs
+COPY --from=build --chown=node:node /repo/apps/web/dist/import-headway.mjs ./apps/web/import-headway.mjs
 COPY --from=build --chown=node:node /repo/packages/db/drizzle ./migrations
 COPY --chown=node:node docker/entrypoint.sh /usr/local/bin/featherlog
 RUN chmod +x /usr/local/bin/featherlog && mkdir -p /data/uploads && chown -R node:node /data

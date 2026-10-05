@@ -16,7 +16,8 @@
       "!apps/web/public/widget",
       "!**/test-results",
       "!**/playwright-report",
-      "!packages/mcp/dist"
+      "!packages/mcp/dist",
+      "!**/test/fixtures"
     ]
   },
   "formatter": {

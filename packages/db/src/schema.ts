@@ -318,6 +318,28 @@ export const idempotencyKeys = pgTable(
   ],
 );
 
+/** Content imported from other tools (e.g. Headway), so imports can be re-run without duplicates. */
+export const postImports = pgTable(
+  "post_imports",
+  {
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    /** e.g. `headway:nailted-changelog` */
+    source: text("source").notNull(),
+    externalId: text("external_id").notNull(),
+    postId: text("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    locale: text("locale").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.workspaceId, t.source, t.externalId] }),
+    index("post_imports_post_idx").on(t.postId),
+  ],
+);
+
 /** Transactional outbox of domain events (webhooks/integrations consume it later). */
 export const events = pgTable(
   "events",

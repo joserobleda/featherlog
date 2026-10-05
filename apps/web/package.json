@@ -10,9 +10,10 @@
     "typecheck": "tsc --noEmit -p .",
     "seed": "tsx --env-file-if-exists=.env.local scripts/seed.ts",
     "worker": "tsx worker.ts",
-    "build:worker": "esbuild worker.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/worker.mjs --tsconfig=tsconfig.json --external:sharp --external:pg-native --banner:js=\"import{createRequire}from'module';const require=createRequire(import.meta.url);\" && esbuild scripts/create-api-key.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/create-api-key.mjs --tsconfig=tsconfig.json --banner:js=\"import{createRequire}from'module';const require=createRequire(import.meta.url);\"",
+    "build:worker": "esbuild worker.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/worker.mjs --tsconfig=tsconfig.json --external:sharp --external:pg-native --banner:js=\"import{createRequire}from'module';const require=createRequire(import.meta.url);\" && esbuild scripts/create-api-key.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/create-api-key.mjs --tsconfig=tsconfig.json --banner:js=\"import{createRequire}from'module';const require=createRequire(import.meta.url);\" && esbuild scripts/import-headway.ts --bundle --platform=node --format=esm --target=node22 --outfile=dist/import-headway.mjs --tsconfig=tsconfig.json --external:sharp --external:pg-native --banner:js=\"import{createRequire}from'module';const require=createRequire(import.meta.url);\"",
     "e2e": "playwright test",
-    "create-api-key": "tsx --env-file-if-exists=.env.local scripts/create-api-key.ts"
+    "create-api-key": "tsx --env-file-if-exists=.env.local scripts/create-api-key.ts",
+    "import-headway": "tsx --env-file-if-exists=.env.local scripts/import-headway.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.900.0",
@@ -41,6 +42,7 @@
     "nanoid": "^5.1.0",
     "next": "16.3.8",
     "next-intl": "^4.14.9",
+    "node-html-parser": "^9.0.4",
     "nodemailer": "^10.0.14",
     "pg-boss": "^12.36.0",
     "pino": "^10.4.0",
@@ -52,6 +54,7 @@
     "sharp": "^0.35.5",
     "sonner": "^2.0.0",
     "tailwind-merge": "^3.3.0",
+    "turndown": "^7.2.4",
     "undici": "^8.11.2",
     "zod": "^4.6.5"
   },
@@ -62,6 +65,7 @@
     "@types/nodemailer": "^7.0.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
+    "@types/turndown": "^5.0.6",
     "esbuild": "^0.28.2",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.20.0"
