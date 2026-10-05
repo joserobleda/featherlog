@@ -14,3 +14,4 @@ packages/widget/build
 dist
 apps/web/public/widget.js
 apps/web/public/widget/
+*.tsbuildinfo

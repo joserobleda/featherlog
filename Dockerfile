@@ -44,7 +44,10 @@ COPY --from=build --chown=node:node /repo/apps/web/dist/create-api-key.mjs ./app
 COPY --from=build --chown=node:node /repo/apps/web/dist/import-headway.mjs ./apps/web/import-headway.mjs
 COPY --from=build --chown=node:node /repo/packages/db/drizzle ./migrations
 COPY --chown=node:node docker/entrypoint.sh /usr/local/bin/featherlog
-RUN chmod +x /usr/local/bin/featherlog && mkdir -p /data/uploads && chown -R node:node /data
+# The bundled CLIs (import-headway) load sharp at runtime; the standalone output keeps it only
+# inside the pnpm store, so expose it where Node resolves packages from /app/apps/web.
+RUN ln -s "$(ls -d node_modules/.pnpm/sharp@*/node_modules/sharp | head -1 | sed 's#^node_modules/##')" node_modules/sharp \
+  && chmod +x /usr/local/bin/featherlog && mkdir -p /data/uploads && chown -R node:node /data
 
 USER node
 VOLUME ["/data"]
