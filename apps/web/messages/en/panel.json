@@ -1,0 +1,40 @@
+{
+  "nav": {
+    "posts": "Posts",
+    "settings": "Settings",
+    "general": "General",
+    "publicPage": "Public page",
+    "widget": "Widget",
+    "categories": "Categories",
+    "languages": "Languages",
+    "team": "Team",
+    "api": "API & MCP",
+    "account": "Your profile",
+    "viewPublic": "View public page",
+    "newWorkspace": "New workspace",
+    "workspaces": "Workspaces",
+    "docs": "Documentation"
+  },
+  "onboarding": {
+    "title": "Create your workspace",
+    "subtitle": "A workspace holds one product's changelog, widget and team.",
+    "name": "Product or company name",
+    "slug": "Public URL",
+    "language": "Main language",
+    "languageHint": "You can add more languages later.",
+    "website": "Website",
+    "submit": "Create workspace"
+  },
+  "home": {
+    "tagline": "The lightweight changelog for your product",
+    "description": "Publish product updates, show them in an embeddable widget, in every language — and let your AI agents post them through the API and MCP.",
+    "getStarted": "Get started",
+    "signIn": "Sign in",
+    "features": {
+      "widget": "Drop-in widget, compatible with Headway snippets",
+      "i18n": "Native multi-language posts",
+      "api": "REST API and MCP server for agents",
+      "oss": "Open source and self-hostable"
+    }
+  }
+}

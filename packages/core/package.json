@@ -3,8 +3,13 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
-  "scripts": { "typecheck": "tsc --noEmit -p ." },
+  "exports": {
+    ".": "./src/index.ts",
+    "./client": "./src/client.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit -p ."
+  },
   "dependencies": {
     "@featherlog/db": "workspace:*",
     "@featherlog/markdown": "workspace:*",
@@ -12,5 +17,7 @@
     "nanoid": "^5.1.0",
     "zod": "^4.6.5"
   },
-  "devDependencies": { "@electric-sql/pglite": "^0.5.8" }
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8"
+  }
 }

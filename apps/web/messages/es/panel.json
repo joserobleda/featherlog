@@ -1,0 +1,40 @@
+{
+  "nav": {
+    "posts": "Entradas",
+    "settings": "Ajustes",
+    "general": "General",
+    "publicPage": "Página pública",
+    "widget": "Widget",
+    "categories": "Categorías",
+    "languages": "Idiomas",
+    "team": "Equipo",
+    "api": "API y MCP",
+    "account": "Tu perfil",
+    "viewPublic": "Ver página pública",
+    "newWorkspace": "Nuevo espacio",
+    "workspaces": "Espacios",
+    "docs": "Documentación"
+  },
+  "onboarding": {
+    "title": "Crea tu espacio",
+    "subtitle": "Un espacio contiene el changelog, el widget y el equipo de un producto.",
+    "name": "Nombre del producto o empresa",
+    "slug": "URL pública",
+    "language": "Idioma principal",
+    "languageHint": "Podrás añadir más idiomas después.",
+    "website": "Web",
+    "submit": "Crear espacio"
+  },
+  "home": {
+    "tagline": "El changelog ligero para tu producto",
+    "description": "Publica novedades de producto, muéstralas en un widget embebible y en todos los idiomas, y deja que tus agentes de IA las publiquen con la API y el MCP.",
+    "getStarted": "Empezar",
+    "signIn": "Iniciar sesión",
+    "features": {
+      "widget": "Widget listo para pegar, compatible con los snippets de Headway",
+      "i18n": "Entradas multi-idioma nativas",
+      "api": "API REST y servidor MCP para agentes",
+      "oss": "Open source y autohospedable"
+    }
+  }
+}
