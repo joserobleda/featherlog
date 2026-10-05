@@ -94,20 +94,15 @@ export function LoginForm({ next, googleEnabled }: { next: string; googleEnabled
             onChange={(e) => setEmail(e.target.value)}
           />
         </Field>
-        <Field
-          label={
-            <span className="flex items-center justify-between">
+        <div className="grid gap-1.5">
+          <div className="flex items-center justify-between">
+            <label htmlFor="password" className="text-sm font-medium">
               {t("password")}
-              <Link
-                href="/forgot-password"
-                className="text-xs font-normal text-brand hover:underline"
-              >
-                {t("forgot")}
-              </Link>
-            </span>
-          }
-          htmlFor="password"
-        >
+            </label>
+            <Link href="/forgot-password" className="text-xs text-brand hover:underline">
+              {t("forgot")}
+            </Link>
+          </div>
           <Input
             id="password"
             type="password"
@@ -115,7 +110,7 @@ export function LoginForm({ next, googleEnabled }: { next: string; googleEnabled
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
-        </Field>
+        </div>
         {error ? (
           <p className="text-sm text-danger" role="alert">
             {error}

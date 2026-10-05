@@ -25,10 +25,13 @@ describe("rate limiter", () => {
 });
 
 describe("SSRF guard", () => {
-  it.each(["http://127.0.0.1/x.png", "http://localhost/x.png", "http://10.0.0.5/a", "http://169.254.169.254/latest", "file:///etc/passwd"])(
-    "refuses %s",
-    async (url) => {
-      await expect(fetchPublicUrl(url, 1024)).rejects.toThrow();
-    },
-  );
+  it.each([
+    "http://127.0.0.1/x.png",
+    "http://localhost/x.png",
+    "http://10.0.0.5/a",
+    "http://169.254.169.254/latest",
+    "file:///etc/passwd",
+  ])("refuses %s", async (url) => {
+    await expect(fetchPublicUrl(url, 1024)).rejects.toThrow();
+  });
 });

@@ -339,7 +339,7 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
   ];
 
   return (
-    <div className="flex h-dvh flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       {/* Top bar */}
       <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border bg-surface px-4">
         <Button asChild variant="ghost" size="sm">

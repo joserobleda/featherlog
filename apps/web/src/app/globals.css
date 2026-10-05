@@ -195,3 +195,9 @@ body {
   list-style: none;
   padding-inline-start: 0.2em;
 }
+
+/* Grid children may shrink below their content width (long code snippets scroll instead of
+   overflowing the page). */
+.grid > * {
+  min-width: 0;
+}
