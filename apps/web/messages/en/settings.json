@@ -222,9 +222,66 @@
   },
   "api": {
     "title": "API & MCP",
-    "description": "Let your scripts and AI agents publish updates.",
-    "comingSoon": "Coming soon",
-    "comingSoonDescription": "API keys and the MCP server will be configured here."
+    "description": "Let your scripts, CI and AI agents read and publish updates.",
+    "publishing": {
+      "title": "Integrations can publish",
+      "description": "When off (recommended), the API and MCP can only create and edit drafts — a person publishes from the dashboard. When on, keys with the publish scope and authorized MCP apps can publish, schedule and edit live posts."
+    },
+    "keys": {
+      "title": "API keys",
+      "description": "Workspace keys for the REST API and the MCP server. Treat them like passwords.",
+      "create": "Create key",
+      "empty": "No API keys yet",
+      "name": "Name",
+      "namePlaceholder": "e.g. GitHub Actions",
+      "scopes": "Permissions",
+      "expires": "Expires",
+      "never": "Never",
+      "days": "In {count} days",
+      "lastUsed": "Last used {date}",
+      "neverUsed": "Never used",
+      "created": "Created {date}",
+      "revoke": "Revoke",
+      "revokeConfirm": "Revoke this key? Anything using it will stop working immediately.",
+      "revoked": "Key revoked",
+      "secretTitle": "Copy your new API key",
+      "secretDescription": "For security, it won't be shown again.",
+      "done": "Done",
+      "scopeNames": {
+        "posts:read": "Read posts",
+        "posts:write": "Create & edit posts",
+        "posts:publish": "Publish posts",
+        "categories:write": "Manage categories",
+        "assets:write": "Upload images",
+        "settings:write": "Change settings",
+        "members:admin": "Manage team"
+      }
+    },
+    "mcp": {
+      "title": "Connect AI agents (MCP)",
+      "description": "Featherlog speaks the Model Context Protocol: agents can draft, translate and publish posts.",
+      "url": "MCP server URL",
+      "claudeTitle": "Claude (web & desktop)",
+      "claude": "Settings → Connectors → Add custom connector, paste the URL and sign in. No key needed.",
+      "claudeCodeTitle": "Claude Code",
+      "cursorTitle": "Cursor / other clients (with an API key)",
+      "stdioTitle": "Local stdio server",
+      "stdio": "For clients that only support local servers:"
+    },
+    "rest": {
+      "title": "REST API",
+      "description": "OpenAPI 3.1 with idempotency keys, ETags and problem+json errors.",
+      "docs": "Open API reference",
+      "example": "Create a draft:"
+    },
+    "apps": {
+      "title": "Authorized apps",
+      "description": "Apps you connected with your account through OAuth (applies to all your workspaces).",
+      "empty": "No apps authorized yet",
+      "revoke": "Revoke access",
+      "revoked": "Access revoked",
+      "authorized": "Authorized {date}"
+    }
   },
   "account": {
     "title": "Your profile",

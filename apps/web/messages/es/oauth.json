@@ -1,0 +1,23 @@
+{
+  "title": "Autorizar a {client}",
+  "subtitle": "{client} quiere acceder a tu cuenta de Featherlog",
+  "signedInAs": "Has iniciado sesión como {email}",
+  "permissions": "Podrá:",
+  "allow": "Permitir acceso",
+  "deny": "Denegar",
+  "unknownClient": "Una aplicación",
+  "footnote": "Las integraciones crean borradores salvo que un administrador les permita publicar (Ajustes → API y MCP). Puedes revocar el acceso cuando quieras.",
+  "scopes": {
+    "openid": "Confirmar tu identidad",
+    "profile": "Ver tu nombre y foto de perfil",
+    "email": "Ver tu email",
+    "offline_access": "Seguir conectada sin volver a preguntar",
+    "posts:read": "Leer entradas, incluidos borradores",
+    "posts:write": "Crear y editar entradas",
+    "posts:publish": "Publicar, programar y despublicar entradas",
+    "categories:write": "Gestionar categorías",
+    "assets:write": "Subir imágenes",
+    "settings:write": "Cambiar ajustes del espacio y del widget",
+    "members:admin": "Invitar y gestionar al equipo"
+  }
+}

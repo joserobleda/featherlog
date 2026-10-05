@@ -11,7 +11,12 @@ export default async function NewPostPage({ params }: { params: Promise<{ ws: st
   return (
     <PostEditor
       {...base}
-      initial={{ translations: {}, publishedAt: null, published: false, authorId: wctx.session.user.id }}
+      initial={{
+        translations: {},
+        publishedAt: null,
+        published: false,
+        authorId: wctx.session.user.id,
+      }}
     />
   );
 }

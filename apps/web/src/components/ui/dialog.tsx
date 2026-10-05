@@ -30,10 +30,15 @@ export function DialogContent({
       >
         <div className="grid gap-1 pr-6">
           <D.Title className="text-base font-semibold">{title}</D.Title>
-          {description ? <D.Description className="text-sm text-fg-muted">{description}</D.Description> : null}
+          {description ? (
+            <D.Description className="text-sm text-fg-muted">{description}</D.Description>
+          ) : null}
         </div>
         {children}
-        <D.Close className="absolute right-4 top-4 rounded-md p-1 text-fg-muted hover:bg-muted" aria-label="Close">
+        <D.Close
+          className="absolute right-4 top-4 rounded-md p-1 text-fg-muted hover:bg-muted"
+          aria-label="Close"
+        >
           <X className="size-4" />
         </D.Close>
       </D.Content>

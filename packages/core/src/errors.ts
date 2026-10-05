@@ -32,5 +32,6 @@ export class AppError extends Error {
 }
 
 export const notFound = (what: string) => new AppError("not_found", `${what} not found`);
-export const forbidden = (msg = "You do not have permission to do this") => new AppError("forbidden", msg);
+export const forbidden = (msg = "You do not have permission to do this") =>
+  new AppError("forbidden", msg);
 export const isAppError = (e: unknown): e is AppError => e instanceof AppError;

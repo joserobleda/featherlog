@@ -222,9 +222,66 @@
   },
   "api": {
     "title": "API y MCP",
-    "description": "Permite que tus scripts y agentes de IA publiquen novedades.",
-    "comingSoon": "Próximamente",
-    "comingSoonDescription": "Aquí podrás configurar las claves de API y el servidor MCP."
+    "description": "Deja que tus scripts, tu CI y tus agentes de IA lean y publiquen novedades.",
+    "publishing": {
+      "title": "Las integraciones pueden publicar",
+      "description": "Desactivado (recomendado), la API y el MCP solo crean y editan borradores y una persona los publica desde el panel. Activado, las claves con permiso de publicar y las apps MCP autorizadas pueden publicar, programar y editar entradas publicadas."
+    },
+    "keys": {
+      "title": "Claves de API",
+      "description": "Claves del espacio para la API REST y el servidor MCP. Trátalas como contraseñas.",
+      "create": "Crear clave",
+      "empty": "Aún no hay claves",
+      "name": "Nombre",
+      "namePlaceholder": "p. ej. GitHub Actions",
+      "scopes": "Permisos",
+      "expires": "Caduca",
+      "never": "Nunca",
+      "days": "En {count} días",
+      "lastUsed": "Usada {date}",
+      "neverUsed": "Sin usar",
+      "created": "Creada el {date}",
+      "revoke": "Revocar",
+      "revokeConfirm": "¿Revocar esta clave? Lo que la use dejará de funcionar al momento.",
+      "revoked": "Clave revocada",
+      "secretTitle": "Copia tu nueva clave",
+      "secretDescription": "Por seguridad, no se volverá a mostrar.",
+      "done": "Hecho",
+      "scopeNames": {
+        "posts:read": "Leer entradas",
+        "posts:write": "Crear y editar entradas",
+        "posts:publish": "Publicar entradas",
+        "categories:write": "Gestionar categorías",
+        "assets:write": "Subir imágenes",
+        "settings:write": "Cambiar ajustes",
+        "members:admin": "Gestionar el equipo"
+      }
+    },
+    "mcp": {
+      "title": "Conecta agentes de IA (MCP)",
+      "description": "Featherlog habla el Model Context Protocol: los agentes pueden redactar, traducir y publicar entradas.",
+      "url": "URL del servidor MCP",
+      "claudeTitle": "Claude (web y escritorio)",
+      "claude": "Ajustes → Conectores → Añadir conector personalizado, pega la URL e inicia sesión. No hace falta clave.",
+      "claudeCodeTitle": "Claude Code",
+      "cursorTitle": "Cursor / otros clientes (con clave de API)",
+      "stdioTitle": "Servidor local stdio",
+      "stdio": "Para clientes que solo admiten servidores locales:"
+    },
+    "rest": {
+      "title": "API REST",
+      "description": "OpenAPI 3.1 con claves de idempotencia, ETags y errores problem+json.",
+      "docs": "Abrir la referencia de la API",
+      "example": "Crear un borrador:"
+    },
+    "apps": {
+      "title": "Apps autorizadas",
+      "description": "Apps que conectaste con tu cuenta mediante OAuth (afecta a todos tus espacios).",
+      "empty": "Aún no has autorizado ninguna app",
+      "revoke": "Revocar acceso",
+      "revoked": "Acceso revocado",
+      "authorized": "Autorizada el {date}"
+    }
   },
   "account": {
     "title": "Tu perfil",

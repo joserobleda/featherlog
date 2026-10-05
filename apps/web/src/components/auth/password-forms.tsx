@@ -24,7 +24,13 @@ export function ForgotForm() {
       }}
     >
       <Field label={t("email")} htmlFor="email">
-        <Input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Input
+          id="email"
+          type="email"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
       </Field>
       <Button type="submit" loading={loading}>
         {t("sendReset")}
@@ -61,7 +67,14 @@ export function ResetForm({ token }: { token: string }) {
       }}
     >
       <Field label={t("newPassword")} htmlFor="password" hint={t("passwordHint")}>
-        <Input id="password" type="password" minLength={8} required value={password} onChange={(e) => setPassword(e.target.value)} />
+        <Input
+          id="password"
+          type="password"
+          minLength={8}
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
       </Field>
       {error ? <p className="text-sm text-danger">{error}</p> : null}
       <Button type="submit" loading={loading}>

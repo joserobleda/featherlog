@@ -6,7 +6,11 @@ import { PostEditor } from "../post-editor";
 
 export const metadata = { title: "Edit post" };
 
-export default async function EditPostPage({ params }: { params: Promise<{ ws: string; id: string }> }) {
+export default async function EditPostPage({
+  params,
+}: {
+  params: Promise<{ ws: string; id: string }>;
+}) {
   const { ws, id } = await params;
   const wctx = await getWorkspaceContext(ws);
   const post = await getPost(wctx.ctx, id).catch((e) => {
@@ -23,7 +27,10 @@ export default async function EditPostPage({ params }: { params: Promise<{ ws: s
         version: post.version,
         publicId: post.publicId,
         translations: Object.fromEntries(
-          Object.entries(post.translations).map(([l, t]) => [l, { title: t.title, contentMd: t.contentMd }]),
+          Object.entries(post.translations).map(([l, t]) => [
+            l,
+            { title: t.title, contentMd: t.contentMd },
+          ]),
         ),
         slugs: Object.fromEntries(Object.entries(post.translations).map(([l, t]) => [l, t.slug])),
         publishedAt: post.publishedAt?.toISOString() ?? null,

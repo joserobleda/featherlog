@@ -7,7 +7,10 @@ import type { EditorProps } from "./post-editor";
 
 /** Shared props for the new/edit post pages. */
 export async function editorBase({ workspace, ctx }: WorkspaceContext) {
-  const [categories, members] = await Promise.all([listCategories(db, workspace.id), listMembers(db, workspace.id)]);
+  const [categories, members] = await Promise.all([
+    listCategories(db, workspace.id),
+    listMembers(db, workspace.id),
+  ]);
   return {
     workspace: {
       slug: workspace.slug,

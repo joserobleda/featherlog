@@ -9,7 +9,7 @@ import {
 import { renderMarkdown } from "@featherlog/markdown";
 import { and, desc, eq, exists, ilike, inArray, isNull, lt, or, type SQL, sql } from "drizzle-orm";
 import { z } from "zod";
-import { actorLabel, actorUserId, assertCan, can, type Ctx } from "./auth";
+import { actorLabel, actorUserId, assertCan, type Ctx, can } from "./auth";
 import { type Category, categoryName, listCategories } from "./categories";
 import { AppError, forbidden, notFound } from "./errors";
 import { emit } from "./events";
@@ -54,7 +54,10 @@ export type Post = {
   translations: Record<string, PostTranslation>;
 };
 
-export function postStatus(p: { published: boolean; publishedAt: Date | null }, now = new Date()): PostStatus {
+export function postStatus(
+  p: { published: boolean; publishedAt: Date | null },
+  now = new Date(),
+): PostStatus {
   if (!p.published) return "draft";
   if (p.publishedAt && p.publishedAt.getTime() > now.getTime()) return "scheduled";
   return "published";
@@ -165,7 +168,9 @@ async function renderTranslation(
   cats: Category[],
   fallbackLocale: string,
 ) {
-  const r = await renderMarkdown(contentMd, { categories: mdCategories(cats, locale, fallbackLocale) });
+  const r = await renderMarkdown(contentMd, {
+    categories: mdCategories(cats, locale, fallbackLocale),
+  });
   return {
     title,
     slug: slugify(title),
@@ -192,7 +197,9 @@ async function syncRendered(db: DbOrTx, ws: Workspace, postId: string) {
   }
   await db.delete(postCategories).where(eq(postCategories.postId, postId));
   if (categoryIds.size > 0) {
-    await db.insert(postCategories).values([...categoryIds].map((categoryId) => ({ postId, categoryId })));
+    await db
+      .insert(postCategories)
+      .values([...categoryIds].map((categoryId) => ({ postId, categoryId })));
   }
 }
 
@@ -201,7 +208,10 @@ async function assertAuthor(db: DbOrTx, workspaceId: string, authorId: string) {
     .select({ userId: memberships.userId })
     .from(memberships)
     .where(and(eq(memberships.workspaceId, workspaceId), eq(memberships.userId, authorId)));
-  if (!m) throw new AppError("validation", "The author must be a member of this workspace", { field: "authorId" });
+  if (!m)
+    throw new AppError("validation", "The author must be a member of this workspace", {
+      field: "authorId",
+    });
 }
 
 /** Integrations (API/MCP) can only publish — or touch published posts — when the workspace allows it. */
@@ -222,9 +232,13 @@ function assertCanEdit(ctx: Ctx, post: { authorId: string | null }) {
 
 function assertVersion(row: { version: number }, expectedVersion: number | undefined) {
   if (expectedVersion !== undefined && expectedVersion !== row.version) {
-    throw new AppError("precondition_failed", "The post was modified by someone else. Reload and try again.", {
-      currentVersion: row.version,
-    });
+    throw new AppError(
+      "precondition_failed",
+      "The post was modified by someone else. Reload and try again.",
+      {
+        currentVersion: row.version,
+      },
+    );
   }
 }
 
@@ -257,7 +271,9 @@ export async function createPost(ctx: Ctx, raw: z.input<typeof CreatePostInput>)
   const ws = await getWorkspace(ctx.db, ctx.workspaceId);
   for (const locale of Object.keys(input.translations)) {
     if (!ws.locales.includes(locale)) {
-      throw new AppError("validation", `Locale "${locale}" is not enabled for this workspace`, { locale });
+      throw new AppError("validation", `Locale "${locale}" is not enabled for this workspace`, {
+        locale,
+      });
     }
   }
   if (input.publish) {
@@ -284,12 +300,19 @@ export async function createPost(ctx: Ctx, raw: z.input<typeof CreatePostInput>)
   for (const [locale, t] of Object.entries(input.translations)) {
     await ctx.db
       .insert(postTranslations)
-      .values({ postId: id, locale, title: t.title, slug: slugify(t.title), contentMd: t.contentMd });
+      .values({
+        postId: id,
+        locale,
+        title: t.title,
+        slug: slugify(t.title),
+        contentMd: t.contentMd,
+      });
   }
   await syncRendered(ctx.db, ws, id);
   const post = await getPost(ctx, id);
   await emit(ctx.db, ws.id, "post.created", { id, status: post.status });
-  if (post.published) await emit(ctx.db, ws.id, "post.published", { id, publishedAt: post.publishedAt });
+  if (post.published)
+    await emit(ctx.db, ws.id, "post.published", { id, publishedAt: post.publishedAt });
   return post;
 }
 
@@ -306,7 +329,10 @@ export async function updatePost(
   const ws = await getWorkspace(ctx.db, ctx.workspaceId);
   if (row.published) assertIntegrationMayPublish(ctx, ws);
 
-  const patch: Partial<typeof posts.$inferInsert> = { updatedAt: new Date(), version: row.version + 1 };
+  const patch: Partial<typeof posts.$inferInsert> = {
+    updatedAt: new Date(),
+    version: row.version + 1,
+  };
   if (input.publishedAt !== undefined) patch.publishedAt = input.publishedAt;
   if (input.authorId !== undefined) {
     if (input.authorId) await assertAuthor(ctx.db, ws.id, input.authorId);
@@ -314,7 +340,10 @@ export async function updatePost(
   }
 
   if (input.translations) {
-    const existing = await ctx.db.select().from(postTranslations).where(eq(postTranslations.postId, row.id));
+    const existing = await ctx.db
+      .select()
+      .from(postTranslations)
+      .where(eq(postTranslations.postId, row.id));
     for (const [locale, t] of Object.entries(input.translations)) {
       const current = existing.find((e) => e.locale === locale);
       if (t === null) {
@@ -328,7 +357,9 @@ export async function updatePost(
         continue;
       }
       if (!ws.locales.includes(locale)) {
-        throw new AppError("validation", `Locale "${locale}" is not enabled for this workspace`, { locale });
+        throw new AppError("validation", `Locale "${locale}" is not enabled for this workspace`, {
+          locale,
+        });
       }
       if (current) {
         await ctx.db
@@ -340,7 +371,11 @@ export async function updatePost(
           })
           .where(and(eq(postTranslations.postId, row.id), eq(postTranslations.locale, locale)));
       } else {
-        if (!t.title) throw new AppError("validation", `A title is required for the new "${locale}" translation`);
+        if (!t.title)
+          throw new AppError(
+            "validation",
+            `A title is required for the new "${locale}" translation`,
+          );
         await ctx.db.insert(postTranslations).values({
           postId: row.id,
           locale,
@@ -368,7 +403,12 @@ export async function setTranslation(
   return updatePost(ctx, id, { translations: { [locale]: TranslationInput.parse(raw) } }, opts);
 }
 
-export async function deleteTranslation(ctx: Ctx, id: string, locale: string, opts: { expectedVersion?: number } = {}) {
+export async function deleteTranslation(
+  ctx: Ctx,
+  id: string,
+  locale: string,
+  opts: { expectedVersion?: number } = {},
+) {
   return updatePost(ctx, id, { translations: { [locale]: null } }, opts);
 }
 
@@ -393,13 +433,23 @@ export async function publishPost(
   return getPost(ctx, row.id);
 }
 
-export async function schedulePost(ctx: Ctx, id: string, at: Date | string, opts: { expectedVersion?: number } = {}) {
+export async function schedulePost(
+  ctx: Ctx,
+  id: string,
+  at: Date | string,
+  opts: { expectedVersion?: number } = {},
+) {
   const date = dateInput.parse(at);
-  if (date.getTime() <= Date.now()) throw new AppError("validation", "The scheduled date must be in the future");
+  if (date.getTime() <= Date.now())
+    throw new AppError("validation", "The scheduled date must be in the future");
   return publishPost(ctx, id, { at: date, expectedVersion: opts.expectedVersion });
 }
 
-export async function unpublishPost(ctx: Ctx, id: string, opts: { expectedVersion?: number } = {}): Promise<Post> {
+export async function unpublishPost(
+  ctx: Ctx,
+  id: string,
+  opts: { expectedVersion?: number } = {},
+): Promise<Post> {
   assertCan(ctx, "posts:publish");
   const row = await loadRow(ctx, id);
   assertCanEdit(ctx, row);
@@ -431,7 +481,9 @@ export async function deletePost(ctx: Ctx, id: string, opts: { expectedVersion?:
 const sortKey = sql<Date>`coalesce(${posts.publishedAt}, ${posts.createdAt})`;
 
 function encodeCursor(p: { publishedAt: Date | null; createdAt: Date; id: string }) {
-  return Buffer.from(`${(p.publishedAt ?? p.createdAt).toISOString()}|${p.id}`).toString("base64url");
+  return Buffer.from(`${(p.publishedAt ?? p.createdAt).toISOString()}|${p.id}`).toString(
+    "base64url",
+  );
 }
 
 function decodeCursor(cursor: string): { at: Date; id: string } | null {
@@ -451,15 +503,25 @@ export async function listPosts(ctx: Ctx, raw: z.input<typeof ListPostsInput> = 
   const now = new Date();
   const where: SQL[] = [eq(posts.workspaceId, ctx.workspaceId), isNull(posts.deletedAt)];
   if (input.status === "draft") where.push(eq(posts.published, false));
-  if (input.status === "published") where.push(eq(posts.published, true), sql`${posts.publishedAt} <= ${now.toISOString()}::timestamptz`);
-  if (input.status === "scheduled") where.push(eq(posts.published, true), sql`${posts.publishedAt} > ${now.toISOString()}::timestamptz`);
+  if (input.status === "published")
+    where.push(
+      eq(posts.published, true),
+      sql`${posts.publishedAt} <= ${now.toISOString()}::timestamptz`,
+    );
+  if (input.status === "scheduled")
+    where.push(
+      eq(posts.published, true),
+      sql`${posts.publishedAt} > ${now.toISOString()}::timestamptz`,
+    );
   if (input.locale) {
     where.push(
       exists(
         ctx.db
           .select({ one: sql`1` })
           .from(postTranslations)
-          .where(and(eq(postTranslations.postId, posts.id), eq(postTranslations.locale, input.locale))),
+          .where(
+            and(eq(postTranslations.postId, posts.id), eq(postTranslations.locale, input.locale)),
+          ),
       ),
     );
   }
@@ -474,7 +536,12 @@ export async function listPosts(ctx: Ctx, raw: z.input<typeof ListPostsInput> = 
         ctx.db
           .select({ one: sql`1` })
           .from(postCategories)
-          .where(and(eq(postCategories.postId, posts.id), eq(postCategories.categoryId, input.categoryId))),
+          .where(
+            and(
+              eq(postCategories.postId, posts.id),
+              eq(postCategories.categoryId, input.categoryId),
+            ),
+          ),
       ),
     );
   }
@@ -531,6 +598,9 @@ export async function countPostsByStatus(ctx: Ctx) {
 /** Re-renders all posts of a workspace (e.g. after renaming a category). */
 export async function rerenderWorkspacePosts(db: DbOrTx, workspaceId: string) {
   const ws = await getWorkspace(db, workspaceId);
-  const rows = await db.select({ id: posts.id }).from(posts).where(eq(posts.workspaceId, workspaceId));
+  const rows = await db
+    .select({ id: posts.id })
+    .from(posts)
+    .where(eq(posts.workspaceId, workspaceId));
   for (const r of rows) await syncRendered(db, ws, r.id);
 }

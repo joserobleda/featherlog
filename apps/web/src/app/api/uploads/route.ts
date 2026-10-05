@@ -20,12 +20,23 @@ export async function POST(req: Request) {
   if (!found || !role) return NextResponse.json({ error: "Not found" }, { status: 404 });
   try {
     const asset = await storeImage(
-      { db, workspaceId: found.workspace.id, actor: { kind: "user", userId: session.user.id, role }, via: "panel" },
+      {
+        db,
+        workspaceId: found.workspace.id,
+        actor: { kind: "user", userId: session.user.id, role },
+        via: "panel",
+      },
       { bytes: Buffer.from(await file.arrayBuffer()), mime: file.type, folder: "images" },
     );
-    return NextResponse.json({ url: asset.url, width: asset.width, height: asset.height, name: file.name });
+    return NextResponse.json({
+      url: asset.url,
+      width: asset.width,
+      height: asset.height,
+      name: file.name,
+    });
   } catch (err) {
-    if (err instanceof UploadError) return NextResponse.json({ error: err.message }, { status: 422 });
+    if (err instanceof UploadError)
+      return NextResponse.json({ error: err.message }, { status: 422 });
     throw err;
   }
 }

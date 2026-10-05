@@ -4,10 +4,24 @@
   "description": "Featherlog MCP server (stdio) — manage your changelog from AI agents",
   "license": "AGPL-3.0-only",
   "type": "module",
-  "bin": { "featherlog-mcp": "./dist/cli.js" },
-  "files": ["dist"],
-  "exports": { ".": "./src/index.ts" },
-  "scripts": { "build": "node build.mjs", "typecheck": "tsc --noEmit -p ." },
-  "dependencies": { "@modelcontextprotocol/sdk": "^1.32.0", "zod": "^4.6.5" },
-  "devDependencies": { "esbuild": "^0.28.2" }
+  "bin": {
+    "featherlog-mcp": "./dist/cli.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc --noEmit -p ."
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
 }

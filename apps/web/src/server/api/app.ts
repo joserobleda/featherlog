@@ -187,21 +187,16 @@ const TranslationIn = z.object({
 
 const CreatePostBody = z
   .object({
-    translations: z
-      .record(z.string(), TranslationIn)
-      .openapi({
-        example: {
-          en: { title: "Dark mode", contentMd: "[New]\n\nSwitch themes from your profile." },
-        },
-      }),
+    translations: z.record(z.string(), TranslationIn).openapi({
+      example: {
+        en: { title: "Dark mode", contentMd: "[New]\n\nSwitch themes from your profile." },
+      },
+    }),
     publishedAt: z.string().datetime({ offset: true }).nullable().optional(),
-    publish: z
-      .boolean()
-      .default(false)
-      .openapi({
-        description:
-          "Publish right away (requires `posts:publish` and the workspace setting allowing integrations to publish).",
-      }),
+    publish: z.boolean().default(false).openapi({
+      description:
+        "Publish right away (requires `posts:publish` and the workspace setting allowing integrations to publish).",
+    }),
     authorId: z.string().nullable().optional(),
   })
   .openapi("CreatePost");
@@ -223,23 +218,16 @@ const IdParam = z.object({
     .openapi({ param: { name: "id", in: "path" }, description: "Post id or public id" }),
 });
 const IfMatch = z.object({
-  "if-match": z
-    .string()
-    .optional()
-    .openapi({
-      description:
-        'ETag from a previous response (e.g. `W/"abc-v3"`). Rejects with 412 if the post changed.',
-    }),
+  "if-match": z.string().optional().openapi({
+    description:
+      'ETag from a previous response (e.g. `W/"abc-v3"`). Rejects with 412 if the post changed.',
+  }),
 });
 const IdemHeader = z.object({
-  "idempotency-key": z
-    .string()
-    .max(200)
-    .optional()
-    .openapi({
-      description:
-        "Retries with the same key return the original response instead of repeating the action.",
-    }),
+  "idempotency-key": z.string().max(200).optional().openapi({
+    description:
+      "Retries with the same key return the original response instead of repeating the action.",
+  }),
 });
 
 const errorResponses = {

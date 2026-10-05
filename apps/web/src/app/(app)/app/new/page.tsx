@@ -11,7 +11,10 @@ export default async function NewWorkspacePage() {
   const t = await getTranslations("onboarding");
   return (
     <AuthShell title={t("title")} subtitle={t("subtitle")}>
-      <OnboardingForm publicBase={env.PUBLIC_URL.replace(/^https?:\/\//, "")} defaultLocale={await getLocale()} />
+      <OnboardingForm
+        publicBase={env.PUBLIC_URL.replace(/^https?:\/\//, "")}
+        defaultLocale={await getLocale()}
+      />
     </AuthShell>
   );
 }

@@ -12,6 +12,7 @@ export * from "./idempotency";
 export * from "./ids";
 export * from "./locales";
 export * from "./members";
+export * from "./oauthApps";
 export * from "./posts";
 export * from "./users";
 export * from "./widget";

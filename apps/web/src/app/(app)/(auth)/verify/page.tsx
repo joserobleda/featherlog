@@ -4,7 +4,11 @@ import { AuthShell } from "@/components/auth/auth-shell";
 
 export const metadata = { title: "Verify your email" };
 
-export default async function VerifyPage({ searchParams }: { searchParams: Promise<{ email?: string }> }) {
+export default async function VerifyPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ email?: string }>;
+}) {
   const { email } = await searchParams;
   const t = await getTranslations("auth");
   return (

@@ -9,6 +9,11 @@ export type DomainEvent =
   | "workspace.updated";
 
 /** Appends an event to the outbox, in the caller's transaction. */
-export async function emit(db: DbOrTx, workspaceId: string, type: DomainEvent, payload: Record<string, unknown>) {
+export async function emit(
+  db: DbOrTx,
+  workspaceId: string,
+  type: DomainEvent,
+  payload: Record<string, unknown>,
+) {
   await db.insert(events).values({ workspaceId, type, payload });
 }

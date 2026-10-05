@@ -31,7 +31,13 @@ export default async function PostsPage({
   searchParams,
 }: {
   params: Promise<{ ws: string }>;
-  searchParams: Promise<{ status?: string; locale?: string; missing?: string; q?: string; cursor?: string }>;
+  searchParams: Promise<{
+    status?: string;
+    locale?: string;
+    missing?: string;
+    q?: string;
+    cursor?: string;
+  }>;
 }) {
   const { ws: slug } = await params;
   const sp = await searchParams;
@@ -54,7 +60,13 @@ export default async function PostsPage({
   const base = `/app/${workspace.slug}/posts`;
   const qs = (patch: Record<string, string | undefined>) => {
     const next = new URLSearchParams();
-    for (const [k, v] of Object.entries({ status, locale: sp.locale, missing: sp.missing, q: sp.q, ...patch })) {
+    for (const [k, v] of Object.entries({
+      status,
+      locale: sp.locale,
+      missing: sp.missing,
+      q: sp.q,
+      ...patch,
+    })) {
       if (v && !(k === "status" && v === "all")) next.set(k, v);
     }
     const s = next.toString();
@@ -64,7 +76,9 @@ export default async function PostsPage({
   const multiLocale = workspace.locales.length > 1;
 
   const titleOf = (p: Post) =>
-    p.translations[workspace.defaultLocale]?.title ?? Object.values(p.translations)[0]?.title ?? t("untitled");
+    p.translations[workspace.defaultLocale]?.title ??
+    Object.values(p.translations)[0]?.title ??
+    t("untitled");
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-8">
@@ -96,7 +110,10 @@ export default async function PostsPage({
           ))}
         </nav>
         <PostFilters
-          locales={workspace.locales.map((code) => ({ code, name: localeInfo(code)?.nativeName ?? code }))}
+          locales={workspace.locales.map((code) => ({
+            code,
+            name: localeInfo(code)?.nativeName ?? code,
+          }))}
           multiLocale={multiLocale}
         />
       </div>
@@ -122,30 +139,55 @@ export default async function PostsPage({
             const date = p.publishedAt ?? p.createdAt;
             const tr = p.translations[workspace.defaultLocale] ?? Object.values(p.translations)[0];
             return (
-              <li key={p.id} className="group relative flex items-start gap-4 px-5 py-4 hover:bg-muted/40">
+              <li
+                key={p.id}
+                className="group relative flex items-start gap-4 px-5 py-4 hover:bg-muted/40"
+              >
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <Link href={`${base}/${p.id}`} className="font-medium after:absolute after:inset-0 hover:underline">
+                    <Link
+                      href={`${base}/${p.id}`}
+                      className="font-medium after:absolute after:inset-0 hover:underline"
+                    >
                       {titleOf(p)}
                     </Link>
                     <StatusBadge status={p.status} label={t(`status.${p.status}`)} />
                     {p.categoryIds.map((id) => {
                       const c = cats.find((x) => x.id === id);
                       return c ? (
-                        <CategoryChip key={id} name={categoryName(c, workspace.defaultLocale, workspace.defaultLocale)} color={c.color} className="text-[11px]" />
+                        <CategoryChip
+                          key={id}
+                          name={categoryName(c, workspace.defaultLocale, workspace.defaultLocale)}
+                          color={c.color}
+                          className="text-[11px]"
+                        />
                       ) : null;
                     })}
                   </div>
-                  {tr?.excerpt ? <p className="mt-1 line-clamp-1 text-sm text-fg-muted">{tr.excerpt}</p> : null}
+                  {tr?.excerpt ? (
+                    <p className="mt-1 line-clamp-1 text-sm text-fg-muted">{tr.excerpt}</p>
+                  ) : null}
                   <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-fg-muted">
-                    <time dateTime={date.toISOString()} title={format.dateTime(date, { dateStyle: "full", timeStyle: "short" })}>
+                    <time
+                      dateTime={date.toISOString()}
+                      title={format.dateTime(date, { dateStyle: "full", timeStyle: "short" })}
+                    >
                       {p.status === "scheduled"
-                        ? t("scheduledFor", { date: format.dateTime(date, { dateStyle: "medium", timeStyle: "short" }) })
+                        ? t("scheduledFor", {
+                            date: format.dateTime(date, {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                            }),
+                          })
                         : format.dateTime(date, { dateStyle: "medium" })}
                     </time>
                     {p.author ? (
                       <span className="inline-flex items-center gap-1.5">
-                        <Avatar name={p.author.displayName || p.author.name} image={p.author.image} size={16} />
+                        <Avatar
+                          name={p.author.displayName || p.author.name}
+                          image={p.author.image}
+                          size={16}
+                        />
                         {p.author.displayName || p.author.name}
                       </span>
                     ) : null}
@@ -160,10 +202,16 @@ export default async function PostsPage({
                         {workspace.locales.map((code) => (
                           <span
                             key={code}
-                            title={p.translations[code] ? localeInfo(code)?.name : t("missingIn", { language: localeInfo(code)?.name ?? code })}
+                            title={
+                              p.translations[code]
+                                ? localeInfo(code)?.name
+                                : t("missingIn", { language: localeInfo(code)?.name ?? code })
+                            }
                             className={cn(
                               "rounded px-1 font-mono text-[10px] uppercase",
-                              p.translations[code] ? "bg-muted text-fg" : "border border-dashed border-border text-fg-muted/60 line-through",
+                              p.translations[code]
+                                ? "bg-muted text-fg"
+                                : "border border-dashed border-border text-fg-muted/60 line-through",
                             )}
                           >
                             {code}
@@ -175,7 +223,14 @@ export default async function PostsPage({
                 </div>
                 {p.status === "published" && tr ? (
                   <a
-                    href={publicUrl(workspace.slug, publicPostPath(workspace, { slug: tr.slug, publicId: p.publicId }, workspace.defaultLocale))}
+                    href={publicUrl(
+                      workspace.slug,
+                      publicPostPath(
+                        workspace,
+                        { slug: tr.slug, publicId: p.publicId },
+                        workspace.defaultLocale,
+                      ),
+                    )}
                     target="_blank"
                     rel="noreferrer"
                     className="relative z-10 hidden text-xs text-fg-muted hover:text-brand group-hover:inline"

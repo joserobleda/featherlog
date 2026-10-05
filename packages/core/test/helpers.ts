@@ -11,7 +11,9 @@ export async function setup() {
 
 export async function createUser(db: Db, name = "Ada", email?: string) {
   const id = newId();
-  await db.insert(user).values({ id, name, email: email ?? `${id}@example.com`, emailVerified: true });
+  await db
+    .insert(user)
+    .values({ id, name, email: email ?? `${id}@example.com`, emailVerified: true });
   return id;
 }
 
@@ -19,7 +21,8 @@ export async function workspaceFixture(db: Db, opts: { locales?: string[] } = {}
   const ownerId = await createUser(db, "Owner");
   let ws = await createWorkspace(db, ownerId, { name: "Acme Inc", defaultLocale: "en" });
   const ctx = (actor: Actor, via: Via = "panel"): Ctx => ({ db, workspaceId: ws.id, actor, via });
-  const userCtx = (userId: string, role: Role, via: Via = "panel") => ctx({ kind: "user", userId, role }, via);
+  const userCtx = (userId: string, role: Role, via: Via = "panel") =>
+    ctx({ kind: "user", userId, role }, via);
   const owner = userCtx(ownerId, "owner");
   if (opts.locales) {
     const { updateWorkspace } = await import("../src/workspaces");

@@ -23,7 +23,10 @@ export async function withIdempotency(
     .where(and(eq(idempotencyKeys.principal, principal), eq(idempotencyKeys.key, key)));
   if (existing) {
     if (existing.requestHash !== requestHash) {
-      throw new AppError("validation", "This Idempotency-Key was already used with a different request");
+      throw new AppError(
+        "validation",
+        "This Idempotency-Key was already used with a different request",
+      );
     }
     return { status: existing.status, body: existing.response, replayed: true };
   }
@@ -31,12 +34,20 @@ export async function withIdempotency(
   if (result.status < 500) {
     await db
       .insert(idempotencyKeys)
-      .values({ principal, key, requestHash, status: result.status, response: result.body as object })
+      .values({
+        principal,
+        key,
+        requestHash,
+        status: result.status,
+        response: result.body as object,
+      })
       .onConflictDoNothing();
   }
   return { ...result, replayed: false };
 }
 
 export async function purgeIdempotencyKeys(db: DbOrTx, olderThanHours = 24) {
-  await db.delete(idempotencyKeys).where(lt(idempotencyKeys.createdAt, new Date(Date.now() - olderThanHours * 3_600_000)));
+  await db
+    .delete(idempotencyKeys)
+    .where(lt(idempotencyKeys.createdAt, new Date(Date.now() - olderThanHours * 3_600_000)));
 }

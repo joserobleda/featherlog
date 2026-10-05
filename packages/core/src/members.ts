@@ -63,7 +63,8 @@ export async function inviteMember(ctx: Ctx, raw: z.input<typeof InviteInput>) {
     .from(memberships)
     .innerJoin(user, eq(user.id, memberships.userId))
     .where(and(eq(memberships.workspaceId, ctx.workspaceId), eq(user.email, input.email)));
-  if (existingMember) throw new AppError("conflict", "This person is already a member", { field: "email" });
+  if (existingMember)
+    throw new AppError("conflict", "This person is already a member", { field: "email" });
 
   await ctx.db
     .update(invitations)
@@ -102,7 +103,10 @@ export async function revokeInvitation(ctx: Ctx, invitationId: string) {
 /** Looks up a pending, non-expired invitation by its plaintext token. */
 export async function findInvitation(db: DbOrTx, token: string) {
   const [row] = await db
-    .select({ invitation: invitations, workspace: { id: workspaces.id, name: workspaces.name, slug: workspaces.slug } })
+    .select({
+      invitation: invitations,
+      workspace: { id: workspaces.id, name: workspaces.name, slug: workspaces.slug },
+    })
     .from(invitations)
     .innerJoin(workspaces, eq(workspaces.id, invitations.workspaceId))
     .where(
@@ -122,7 +126,10 @@ export async function acceptInvitation(db: DbOrTx, token: string, userId: string
     .insert(memberships)
     .values({ workspaceId: found.invitation.workspaceId, userId, role: found.invitation.role })
     .onConflictDoNothing();
-  await db.update(invitations).set({ status: "accepted" }).where(eq(invitations.id, found.invitation.id));
+  await db
+    .update(invitations)
+    .set({ status: "accepted" })
+    .where(eq(invitations.id, found.invitation.id));
   return found.workspace;
 }
 
@@ -167,7 +174,10 @@ export async function removeMember(ctx: Ctx, userId: string) {
   if (member.role === "owner") {
     if (!self) assertMayGrant(ctx, "owner");
     if ((await ownersCount(ctx.db, ctx.workspaceId)) <= 1) {
-      throw new AppError("conflict", "Transfer ownership before leaving: a workspace needs at least one owner");
+      throw new AppError(
+        "conflict",
+        "Transfer ownership before leaving: a workspace needs at least one owner",
+      );
     }
   }
   await ctx.db

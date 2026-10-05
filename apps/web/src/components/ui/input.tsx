@@ -14,7 +14,18 @@ export function Textarea({ className, ...props }: React.ComponentProps<"textarea
 
 export function Select({ className, children, ...props }: React.ComponentProps<"select">) {
   return (
-    <select className={cn(base, "h-9 pr-8 appearance-none bg-[length:16px] bg-[right_8px_center] bg-no-repeat", className)} style={{ backgroundImage: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")" }} {...props}>
+    <select
+      className={cn(
+        base,
+        "h-9 pr-8 appearance-none bg-[length:16px] bg-[right_8px_center] bg-no-repeat",
+        className,
+      )}
+      style={{
+        backgroundImage:
+          "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23667085' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E\")",
+      }}
+      {...props}
+    >
       {children}
     </select>
   );

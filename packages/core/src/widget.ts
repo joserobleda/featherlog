@@ -6,11 +6,21 @@ import { isLocale } from "./locales";
 
 export type WidgetSettings = typeof widgetSettings.$inferSelect;
 
-export const WIDGET_STRING_KEYS = ["title", "readMore", "footer", "back", "empty", "newBadge"] as const;
+export const WIDGET_STRING_KEYS = [
+  "title",
+  "readMore",
+  "footer",
+  "back",
+  "empty",
+  "newBadge",
+] as const;
 
 export const UpdateWidgetSettingsInput = z
   .object({
-    accentColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable(),
+    accentColor: z
+      .string()
+      .regex(/^#[0-9a-fA-F]{6}$/)
+      .nullable(),
     badgeDelay: z.number().int().min(0).max(60),
     entriesLimit: z.number().int().min(1).max(20),
     expireAfterDays: z.number().int().min(1).max(365).nullable(),
@@ -23,13 +33,23 @@ export const UpdateWidgetSettingsInput = z
   .partial();
 
 export async function getWidgetSettings(db: DbOrTx, workspaceId: string): Promise<WidgetSettings> {
-  const [row] = await db.select().from(widgetSettings).where(eq(widgetSettings.workspaceId, workspaceId));
+  const [row] = await db
+    .select()
+    .from(widgetSettings)
+    .where(eq(widgetSettings.workspaceId, workspaceId));
   if (row) return row;
-  const [created] = await db.insert(widgetSettings).values({ workspaceId }).onConflictDoNothing().returning();
+  const [created] = await db
+    .insert(widgetSettings)
+    .values({ workspaceId })
+    .onConflictDoNothing()
+    .returning();
   return created ?? (await getWidgetSettings(db, workspaceId));
 }
 
-export async function updateWidgetSettings(ctx: Ctx, raw: z.input<typeof UpdateWidgetSettingsInput>) {
+export async function updateWidgetSettings(
+  ctx: Ctx,
+  raw: z.input<typeof UpdateWidgetSettingsInput>,
+) {
   assertCan(ctx, "settings:write");
   const input = UpdateWidgetSettingsInput.parse(raw);
   await getWidgetSettings(ctx.db, ctx.workspaceId);

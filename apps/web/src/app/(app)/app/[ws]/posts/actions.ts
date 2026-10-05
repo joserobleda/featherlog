@@ -1,5 +1,13 @@
 "use server";
-import { createPost, deletePost, getPost, type Post, publishPost, unpublishPost, updatePost } from "@featherlog/core";
+import {
+  createPost,
+  deletePost,
+  getPost,
+  type Post,
+  publishPost,
+  unpublishPost,
+  updatePost,
+} from "@featherlog/core";
 import { revalidatePath } from "next/cache";
 import { runAction } from "@/lib/actions";
 import { getWorkspaceContext } from "@/lib/session";
@@ -37,9 +45,16 @@ export async function savePostAction(input: SavePostInput) {
     let post: Post;
     if (!input.id) {
       const translations = Object.fromEntries(
-        Object.entries(input.translations).filter((e): e is [string, { title: string; contentMd: string }] => !!e[1]),
+        Object.entries(input.translations).filter(
+          (e): e is [string, { title: string; contentMd: string }] => !!e[1],
+        ),
       );
-      post = await createPost(ctx, { translations, publishedAt, publish: input.published, authorId: input.authorId });
+      post = await createPost(ctx, {
+        translations,
+        publishedAt,
+        publish: input.published,
+        authorId: input.authorId,
+      });
     } else {
       const current = await getPost(ctx, input.id);
       const translations: Record<string, { title: string; contentMd: string } | null> = {};
@@ -56,7 +71,8 @@ export async function savePostAction(input: SavePostInput) {
         { translations, publishedAt, authorId: input.authorId },
         { expectedVersion: input.expectedVersion },
       );
-      if (input.published && !post.published) post = await publishPost(ctx, post.id, { at: publishedAt });
+      if (input.published && !post.published)
+        post = await publishPost(ctx, post.id, { at: publishedAt });
       else if (!input.published && post.published) post = await unpublishPost(ctx, post.id);
     }
     revalidatePath(`/app/${workspace.slug}/posts`);

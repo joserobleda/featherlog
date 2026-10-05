@@ -2,7 +2,17 @@ import Link from "next/link";
 import type * as React from "react";
 import { Logo } from "@/components/logo";
 
-export function AuthShell({ title, subtitle, children, footer }: { title: string; subtitle?: React.ReactNode; children: React.ReactNode; footer?: React.ReactNode }) {
+export function AuthShell({
+  title,
+  subtitle,
+  children,
+  footer,
+}: {
+  title: string;
+  subtitle?: React.ReactNode;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+}) {
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center px-4 py-12">
       <Link href="/" className="mb-8">

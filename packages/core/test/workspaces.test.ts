@@ -38,7 +38,9 @@ describe("workspaces", () => {
     expect(a.slug).toBe("same-name");
     expect(b.slug).toBe("same-name-2");
     expect(await isSlugAvailable(t.db, "api")).toBe(false);
-    await expect(createWorkspace(t.db, uid, { name: "X", slug: "same-name" })).rejects.toMatchObject({
+    await expect(
+      createWorkspace(t.db, uid, { name: "X", slug: "same-name" }),
+    ).rejects.toMatchObject({
       code: "conflict",
     });
   });
@@ -63,7 +65,9 @@ describe("workspaces", () => {
   it("forbids editors from changing settings", async () => {
     const f = await workspaceFixture(t.db);
     const editor = f.userCtx(await createUser(t.db), "editor");
-    await expect(updateWorkspace(editor, { name: "Nope" })).rejects.toMatchObject({ code: "forbidden" });
+    await expect(updateWorkspace(editor, { name: "Nope" })).rejects.toMatchObject({
+      code: "forbidden",
+    });
   });
 
   it("validates input", async () => {

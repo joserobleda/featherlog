@@ -86,7 +86,9 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
   const [version, setVersion] = useState(initial.version);
   const [publicId, setPublicId] = useState(initial.publicId);
   const [slugs, setSlugs] = useState(initial.slugs ?? {});
-  const [translations, setTranslations] = useState<Record<string, Translation>>(initial.translations);
+  const [translations, setTranslations] = useState<Record<string, Translation>>(
+    initial.translations,
+  );
   const [existing, setExisting] = useState(() => new Set(Object.keys(initial.translations)));
   const [locale, setLocale] = useState(
     initial.translations[workspace.defaultLocale] || !Object.keys(initial.translations)[0]
@@ -107,19 +109,28 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
     [translations, publishedAt, authorId],
   );
   const [savedSnapshot, setSavedSnapshot] = useState(() =>
-    JSON.stringify({ translations: initial.translations, publishedAt: initial.publishedAt, authorId: initial.authorId }),
+    JSON.stringify({
+      translations: initial.translations,
+      publishedAt: initial.publishedAt,
+      authorId: initial.authorId,
+    }),
   );
   const dirty = snapshot() !== savedSnapshot;
 
   const current = translations[locale] ?? { title: "", contentMd: "" };
   const localeInfo = workspace.locales.find((l) => l.code === locale);
-  const defaultName = workspace.locales.find((l) => l.code === workspace.defaultLocale)?.name ?? workspace.defaultLocale;
+  const defaultName =
+    workspace.locales.find((l) => l.code === workspace.defaultLocale)?.name ??
+    workspace.defaultLocale;
   const catName = (c: EditorProps["categories"][number]) =>
     c.names[locale] ?? c.names[workspace.defaultLocale] ?? Object.values(c.names)[0] ?? "";
   const isFuture = publishedAt ? new Date(publishedAt).getTime() > Date.now() : false;
 
   const setCurrent = (patch: Partial<Translation>) =>
-    setTranslations((prev) => ({ ...prev, [locale]: { ...(prev[locale] ?? { title: "", contentMd: "" }), ...patch } }));
+    setTranslations((prev) => ({
+      ...prev,
+      [locale]: { ...(prev[locale] ?? { title: "", contentMd: "" }), ...patch },
+    }));
 
   /* ---------- live preview ---------- */
   useEffect(() => {
@@ -276,8 +287,17 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
 
   const removeCategory = (name: string) => {
     const re = new RegExp(`\\[${name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\]\\s?`, "i");
-    const lines = current.contentMd.split("\n").map((line) => (/^\s*(\[[^\]\n]+\]\s*)+$/.test(line) ? line.replace(re, "").trimEnd() : line));
-    setCurrent({ contentMd: lines.join("\n").replace(/^\n+/, "").replace(/\n{3,}/g, "\n\n") });
+    const lines = current.contentMd
+      .split("\n")
+      .map((line) =>
+        /^\s*(\[[^\]\n]+\]\s*)+$/.test(line) ? line.replace(re, "").trimEnd() : line,
+      );
+    setCurrent({
+      contentMd: lines
+        .join("\n")
+        .replace(/^\n+/, "")
+        .replace(/\n{3,}/g, "\n\n"),
+    });
   };
 
   const liveUrl =
@@ -291,14 +311,30 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
   const toolbar = [
     { icon: Heading2, label: t("toolbar.heading"), run: () => editor.current?.linePrefix("## ") },
     { icon: Bold, label: t("toolbar.bold"), run: () => editor.current?.wrap("**", "**", "bold") },
-    { icon: Italic, label: t("toolbar.italic"), run: () => editor.current?.wrap("_", "_", "italic") },
-    { icon: Link2, label: t("toolbar.link"), run: () => editor.current?.wrap("[", "](https://)", "text") },
+    {
+      icon: Italic,
+      label: t("toolbar.italic"),
+      run: () => editor.current?.wrap("_", "_", "italic"),
+    },
+    {
+      icon: Link2,
+      label: t("toolbar.link"),
+      run: () => editor.current?.wrap("[", "](https://)", "text"),
+    },
     { icon: ImagePlus, label: t("toolbar.image"), run: () => fileInput.current?.click() },
     { icon: List, label: t("toolbar.bulletList"), run: () => editor.current?.linePrefix("- ") },
-    { icon: ListOrdered, label: t("toolbar.numberedList"), run: () => editor.current?.linePrefix("1. ") },
+    {
+      icon: ListOrdered,
+      label: t("toolbar.numberedList"),
+      run: () => editor.current?.linePrefix("1. "),
+    },
     { icon: Quote, label: t("toolbar.quote"), run: () => editor.current?.linePrefix("> ") },
     { icon: Code, label: t("toolbar.code"), run: () => editor.current?.wrap("`", "`", "code") },
-    { icon: SquareCode, label: t("toolbar.codeBlock"), run: () => editor.current?.insertBlock("```\ncode\n```") },
+    {
+      icon: SquareCode,
+      label: t("toolbar.codeBlock"),
+      run: () => editor.current?.insertBlock("```\ncode\n```"),
+    },
   ];
 
   return (
@@ -310,14 +346,27 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
             <ArrowLeft /> {t("back")}
           </Link>
         </Button>
-        <Badge tone={status === "published" ? "success" : status === "scheduled" ? "warning" : "neutral"}>{tStatus(status)}</Badge>
+        <Badge
+          tone={status === "published" ? "success" : status === "scheduled" ? "warning" : "neutral"}
+        >
+          {tStatus(status)}
+        </Badge>
         {initial.createdVia && initial.createdVia !== "panel" ? (
           <Badge tone="brand">
-            {t("createdVia", { via: tVia(initial.createdVia as "api" | "mcp"), actor: initial.actorLabel ?? "—" })}
+            {t("createdVia", {
+              via: tVia(initial.createdVia as "api" | "mcp"),
+              actor: initial.actorLabel ?? "—",
+            })}
           </Badge>
         ) : null}
         <span className="text-xs text-fg-muted" aria-live="polite">
-          {conflict ? null : dirty ? t("unsaved") : autosaveState === "saved" ? t("autosaved") : null}
+          {conflict
+            ? null
+            : dirty
+              ? t("unsaved")
+              : autosaveState === "saved"
+                ? t("autosaved")
+                : null}
         </span>
         <div className="ml-auto flex items-center gap-2">
           {liveUrl ? (
@@ -333,7 +382,10 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
                 key={tab}
                 type="button"
                 onClick={() => setMobileTab(tab)}
-                className={cn("rounded-md px-2.5 py-1 text-xs", mobileTab === tab && "bg-surface shadow-xs")}
+                className={cn(
+                  "rounded-md px-2.5 py-1 text-xs",
+                  mobileTab === tab && "bg-surface shadow-xs",
+                )}
               >
                 {t(tab)}
               </button>
@@ -343,7 +395,10 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
       </header>
 
       {conflict ? (
-        <div className="flex items-center justify-between gap-4 bg-amber-500/10 px-4 py-2 text-sm text-amber-800 dark:text-amber-300" role="alert">
+        <div
+          className="flex items-center justify-between gap-4 bg-amber-500/10 px-4 py-2 text-sm text-amber-800 dark:text-amber-300"
+          role="alert"
+        >
           {t("conflict")}
           <Button size="sm" variant="secondary" onClick={() => window.location.reload()}>
             {t("reload")}
@@ -354,19 +409,34 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
       <div className="flex min-h-0 flex-1">
         {/* Preview (public page look) */}
         <section
-          className={cn("min-w-0 flex-1 overflow-y-auto bg-bg px-6 py-10", mobileTab === "write" && "hidden lg:block")}
+          className={cn(
+            "min-w-0 flex-1 overflow-y-auto bg-bg px-6 py-10",
+            mobileTab === "write" && "hidden lg:block",
+          )}
           style={{ ["--fl-accent" as string]: workspace.accentColor }}
           aria-label={t("preview")}
         >
           <article className="mx-auto max-w-2xl" dir={localeInfo?.dir}>
             <div className="mb-8 flex items-center gap-3 text-sm text-fg-muted">
-              <Avatar name={workspace.name} image={workspace.logoUrl} size={32} className="rounded-lg" />
+              <Avatar
+                name={workspace.name}
+                image={workspace.logoUrl}
+                size={32}
+                className="rounded-lg"
+              />
               <span className="font-medium text-fg">{workspace.name}</span>
             </div>
             <time className="text-sm text-fg-muted">
-              {format.dateTime(publishedAt ? new Date(publishedAt) : new Date(), { dateStyle: "long" })}
+              {format.dateTime(publishedAt ? new Date(publishedAt) : new Date(), {
+                dateStyle: "long",
+              })}
             </time>
-            <h1 className={cn("mt-1 text-3xl font-bold tracking-tight", !current.title && "text-fg-muted/50")}>
+            <h1
+              className={cn(
+                "mt-1 text-3xl font-bold tracking-tight",
+                !current.title && "text-fg-muted/50",
+              )}
+            >
               {current.title || t("titlePlaceholder")}
             </h1>
             {/* biome-ignore lint/security/noDangerouslySetInnerHtml: sanitized by @featherlog/markdown */}
@@ -383,7 +453,11 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
         >
           {/* Locale tabs */}
           {workspace.locales.length > 1 ? (
-            <div className="flex gap-1 overflow-x-auto border-b border-border px-3 pt-2" role="tablist" aria-label={t("translations")}>
+            <div
+              className="flex gap-1 overflow-x-auto border-b border-border px-3 pt-2"
+              role="tablist"
+              aria-label={t("translations")}
+            >
               {workspace.locales.map((l) => {
                 const filled = hasContent(translations[l.code]);
                 return (
@@ -395,12 +469,19 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
                     onClick={() => setLocale(l.code)}
                     className={cn(
                       "flex items-center gap-1.5 whitespace-nowrap rounded-t-md border-b-2 px-3 py-2 text-sm",
-                      l.code === locale ? "border-brand font-medium text-fg" : "border-transparent text-fg-muted hover:text-fg",
+                      l.code === locale
+                        ? "border-brand font-medium text-fg"
+                        : "border-transparent text-fg-muted hover:text-fg",
                     )}
                   >
-                    <span className={cn("size-1.5 rounded-full", filled ? "bg-success" : "bg-border")} aria-hidden />
+                    <span
+                      className={cn("size-1.5 rounded-full", filled ? "bg-success" : "bg-border")}
+                      aria-hidden
+                    />
                     {l.name}
-                    {l.code === workspace.defaultLocale ? <span className="text-[10px] text-fg-muted">★</span> : null}
+                    {l.code === workspace.defaultLocale ? (
+                      <span className="text-[10px] text-fg-muted">★</span>
+                    ) : null}
                   </button>
                 );
               })}
@@ -408,9 +489,13 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
           ) : null}
 
           <div className="min-h-0 flex-1 overflow-y-auto">
-            {!hasContent(translations[locale]) && locale !== workspace.defaultLocale && hasContent(translations[workspace.defaultLocale]) ? (
+            {!hasContent(translations[locale]) &&
+            locale !== workspace.defaultLocale &&
+            hasContent(translations[workspace.defaultLocale]) ? (
               <div className="m-5 grid gap-3 rounded-lg border border-dashed border-border p-4 text-sm">
-                <p className="text-fg-muted">{t("missingTranslation", { language: localeInfo?.name ?? locale })}</p>
+                <p className="text-fg-muted">
+                  {t("missingTranslation", { language: localeInfo?.name ?? locale })}
+                </p>
                 <div className="flex flex-wrap gap-2">
                   <Button
                     size="sm"
@@ -453,7 +538,10 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
                     <div className="px-2.5 py-1.5 text-sm text-fg-muted">{t("noCategories")}</div>
                   ) : (
                     categories.map((c) => (
-                      <DropdownItem key={c.id} onSelect={() => editor.current?.insertBlock(`[${catName(c)}]`)}>
+                      <DropdownItem
+                        key={c.id}
+                        onSelect={() => editor.current?.insertBlock(`[${catName(c)}]`)}
+                      >
                         <span className="size-2.5 rounded-full" style={{ background: c.color }} />
                         {catName(c)}
                       </DropdownItem>
@@ -468,7 +556,12 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
                   style={{ background: c.color, color: "#fff" }}
                 >
                   {catName(c)}
-                  <button type="button" aria-label={`${t("categories")}: ${catName(c)} ×`} onClick={() => removeCategory(catName(c))} className="rounded-full p-0.5 hover:bg-black/15">
+                  <button
+                    type="button"
+                    aria-label={`${t("categories")}: ${catName(c)} ×`}
+                    onClick={() => removeCategory(catName(c))}
+                    className="rounded-full p-0.5 hover:bg-black/15"
+                  >
                     <X className="size-3" />
                   </button>
                 </span>
@@ -521,7 +614,10 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
             <div className="grid grid-cols-2 gap-3">
               <label className="grid gap-1 text-xs font-medium text-fg-muted">
                 {t("author")}
-                <Select value={authorId ?? ""} onChange={(e) => setAuthorId(e.target.value || null)}>
+                <Select
+                  value={authorId ?? ""}
+                  onChange={(e) => setAuthorId(e.target.value || null)}
+                >
                   <option value="">{t("noAuthor")}</option>
                   {members.map((m) => (
                     <option key={m.id} value={m.id}>
@@ -538,11 +634,18 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
                   <input
                     type="datetime-local"
                     value={toLocalInput(publishedAt)}
-                    onChange={(e) => setPublishedAt(e.target.value ? new Date(e.target.value).toISOString() : null)}
+                    onChange={(e) =>
+                      setPublishedAt(e.target.value ? new Date(e.target.value).toISOString() : null)
+                    }
                     className="h-9 w-full rounded-lg border border-border bg-surface px-2 text-sm text-fg"
                   />
                   {publishedAt ? (
-                    <button type="button" onClick={() => setPublishedAt(null)} className="rounded-md px-2 text-xs text-fg-muted hover:bg-muted" title={t("now")}>
+                    <button
+                      type="button"
+                      onClick={() => setPublishedAt(null)}
+                      className="rounded-md px-2 text-xs text-fg-muted hover:bg-muted"
+                      title={t("now")}
+                    >
                       {t("now")}
                     </button>
                   ) : null}
@@ -561,13 +664,21 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
                 />
                 <label htmlFor="published" className="leading-tight">
                   <span className="block font-medium text-fg">{t("published")}</span>
-                  {published ? (isFuture ? t("scheduledHint") : t("publishedHint")) : t("draftHint")}
+                  {published
+                    ? isFuture
+                      ? t("scheduledHint")
+                      : t("publishedHint")
+                    : t("draftHint")}
                 </label>
               </div>
               <div className="ml-auto flex gap-2">
                 {!published ? (
                   <>
-                    <Button variant="secondary" onClick={() => runSave(false, t("saved"))} loading={pending}>
+                    <Button
+                      variant="secondary"
+                      onClick={() => runSave(false, t("saved"))}
+                      loading={pending}
+                    >
                       {t("saveDraft")}
                     </Button>
                     {canPublish ? (
@@ -577,7 +688,11 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
                     ) : null}
                   </>
                 ) : (
-                  <Button onClick={() => runSave(true, t("saved"))} loading={pending} disabled={!dirty && !pending}>
+                  <Button
+                    onClick={() => runSave(true, t("saved"))}
+                    loading={pending}
+                    disabled={!dirty && !pending}
+                  >
                     {t("update")}
                   </Button>
                 )}
@@ -638,7 +753,12 @@ function MarkdownHelp({ label }: { label: string }) {
       }}
     >
       <DialogTrigger asChild>
-        <button type="button" title={label} aria-label={label} className="ml-auto rounded-md p-1.5 text-fg-muted hover:bg-muted hover:text-fg">
+        <button
+          type="button"
+          title={label}
+          aria-label={label}
+          className="ml-auto rounded-md p-1.5 text-fg-muted hover:bg-muted hover:text-fg"
+        >
           <HelpCircle className="size-4" />
         </button>
       </DialogTrigger>
@@ -649,4 +769,3 @@ function MarkdownHelp({ label }: { label: string }) {
     </Dialog>
   );
 }
-

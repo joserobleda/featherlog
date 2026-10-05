@@ -2,7 +2,13 @@ import { assets } from "@featherlog/db";
 import { assertCan, type Ctx } from "./auth";
 import { newId } from "./ids";
 
-export type AssetInput = { storageKey: string; mime: string; size: number; width?: number | null; height?: number | null };
+export type AssetInput = {
+  storageKey: string;
+  mime: string;
+  size: number;
+  width?: number | null;
+  height?: number | null;
+};
 
 /** Records an uploaded file (the bytes are already in storage). */
 export async function createAsset(ctx: Ctx, input: AssetInput) {

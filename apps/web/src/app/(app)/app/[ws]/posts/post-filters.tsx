@@ -5,7 +5,13 @@ import { useTranslations } from "next-intl";
 import { useEffect, useState } from "react";
 import { Input, Select } from "@/components/ui/input";
 
-export function PostFilters({ locales, multiLocale }: { locales: { code: string; name: string }[]; multiLocale: boolean }) {
+export function PostFilters({
+  locales,
+  multiLocale,
+}: {
+  locales: { code: string; name: string }[];
+  multiLocale: boolean;
+}) {
   const t = useTranslations("posts");
   const router = useRouter();
   const pathname = usePathname();
@@ -31,7 +37,9 @@ export function PostFilters({ locales, multiLocale }: { locales: { code: string;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q]);
 
-  const langValue = params.get("missing") ? `missing:${params.get("missing")}` : (params.get("locale") ?? "");
+  const langValue = params.get("missing")
+    ? `missing:${params.get("missing")}`
+    : (params.get("locale") ?? "");
 
   return (
     <div className="flex items-center gap-2">
@@ -61,7 +69,12 @@ export function PostFilters({ locales, multiLocale }: { locales: { code: string;
       ) : null}
       <div className="relative">
         <Search className="pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-fg-muted" />
-        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t("searchPlaceholder")} className="w-56 pl-8" />
+        <Input
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder={t("searchPlaceholder")}
+          className="w-56 pl-8"
+        />
       </div>
     </div>
   );

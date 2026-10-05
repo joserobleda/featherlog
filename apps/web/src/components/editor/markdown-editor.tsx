@@ -3,7 +3,7 @@ import { defaultKeymap, history, historyKeymap, indentWithTab } from "@codemirro
 import { markdown, markdownLanguage } from "@codemirror/lang-markdown";
 import { HighlightStyle, syntaxHighlighting } from "@codemirror/language";
 import { EditorSelection, EditorState } from "@codemirror/state";
-import { drawSelection, EditorView, keymap, placeholder as cmPlaceholder } from "@codemirror/view";
+import { placeholder as cmPlaceholder, drawSelection, EditorView, keymap } from "@codemirror/view";
 import { tags } from "@lezer/highlight";
 import { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 
@@ -82,7 +82,10 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(function M
           syntaxHighlighting(highlight),
           theme,
           cmPlaceholder(placeholder ?? ""),
-          EditorView.contentAttributes.of({ "aria-label": ariaLabel ?? "Markdown editor", spellcheck: "true" }),
+          EditorView.contentAttributes.of({
+            "aria-label": ariaLabel ?? "Markdown editor",
+            spellcheck: "true",
+          }),
           keymap.of([
             { key: "Mod-b", run: (): boolean => (wrapIn(v, "**", "**", "bold"), true) },
             { key: "Mod-i", run: (): boolean => (wrapIn(v, "_", "_", "italic"), true) },
@@ -137,14 +140,16 @@ export const MarkdownEditor = forwardRef<MarkdownEditorHandle, Props>(function M
 
   useImperativeHandle(ref, () => ({
     focus: () => view.current?.focus(),
-    wrap: (before, after = before, ph = "") => view.current && wrapIn(view.current, before, after, ph),
+    wrap: (before, after = before, ph = "") =>
+      view.current && wrapIn(view.current, before, after, ph),
     linePrefix: (prefix) => view.current && toggleLinePrefix(view.current, prefix),
     insertBlock: (text) => view.current && insertBlock(view.current, text),
     replaceText: (search, replacement) => {
       const v = view.current;
       if (!v) return;
       const idx = v.state.doc.toString().indexOf(search);
-      if (idx >= 0) v.dispatch({ changes: { from: idx, to: idx + search.length, insert: replacement } });
+      if (idx >= 0)
+        v.dispatch({ changes: { from: idx, to: idx + search.length, insert: replacement } });
     },
     getValue: () => view.current?.state.doc.toString() ?? "",
   }));
@@ -159,7 +164,10 @@ function wrapIn(v: EditorView, before: string, after: string, ph: string) {
       const insert = `${before}${text}${after}`;
       return {
         changes: { from: range.from, to: range.to, insert },
-        range: EditorSelection.range(range.from + before.length, range.from + before.length + text.length),
+        range: EditorSelection.range(
+          range.from + before.length,
+          range.from + before.length + text.length,
+        ),
       };
     }),
   );
@@ -170,13 +178,16 @@ function toggleLinePrefix(v: EditorView, prefix: string) {
   const { state } = v;
   const lines = new Set<number>();
   for (const r of state.selection.ranges) {
-    for (let n = state.doc.lineAt(r.from).number; n <= state.doc.lineAt(r.to).number; n++) lines.add(n);
+    for (let n = state.doc.lineAt(r.from).number; n <= state.doc.lineAt(r.to).number; n++)
+      lines.add(n);
   }
   const all = [...lines].map((n) => state.doc.line(n));
   const remove = all.every((l) => l.text.startsWith(prefix));
   const changes = all.map((l, i) => {
     const p = prefix === "1. " ? `${i + 1}. ` : prefix;
-    return remove ? { from: l.from, to: l.from + prefix.length, insert: "" } : { from: l.from, insert: p };
+    return remove
+      ? { from: l.from, to: l.from + prefix.length, insert: "" }
+      : { from: l.from, insert: p };
   });
   v.dispatch({ changes });
   v.focus();
@@ -188,9 +199,13 @@ function insertBlock(v: EditorView, text: string) {
   const line = state.doc.lineAt(pos);
   const atLineStart = line.text.trim() === "";
   const before = state.sliceDoc(0, atLineStart ? line.from : line.to);
-  const prefix = before.length === 0 ? "" : before.endsWith("\n\n") ? "" : before.endsWith("\n") ? "\n" : "\n\n";
+  const prefix =
+    before.length === 0 ? "" : before.endsWith("\n\n") ? "" : before.endsWith("\n") ? "\n" : "\n\n";
   const from = atLineStart ? line.from : line.to;
   const insert = `${prefix}${text}\n\n`;
-  v.dispatch({ changes: { from, to: atLineStart ? line.to : line.to, insert }, selection: { anchor: from + insert.length } });
+  v.dispatch({
+    changes: { from, to: atLineStart ? line.to : line.to, insert },
+    selection: { anchor: from + insert.length },
+  });
   v.focus();
 }

@@ -25,7 +25,10 @@ export const CreateCategoryInput = z.object({
   names,
 });
 export const UpdateCategoryInput = z.object({
-  color: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  color: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .optional(),
   names: names.optional(),
 });
 
@@ -62,7 +65,11 @@ export function categoryName(cat: Pick<Category, "names">, locale: string, fallb
   return cat.names[locale] ?? cat.names[fallback] ?? Object.values(cat.names)[0] ?? "";
 }
 
-export function categorySlug(cat: Pick<Category, "slugs" | "names">, locale: string, fallback: string) {
+export function categorySlug(
+  cat: Pick<Category, "slugs" | "names">,
+  locale: string,
+  fallback: string,
+) {
   return cat.slugs[locale] ?? cat.slugs[fallback] ?? slugify(categoryName(cat, locale, fallback));
 }
 
@@ -78,13 +85,19 @@ async function writeNames(db: DbOrTx, categoryId: string, input: Record<string, 
   }
 }
 
-async function assertUniqueNames(db: DbOrTx, workspaceId: string, input: Record<string, string>, exceptId?: string) {
+async function assertUniqueNames(
+  db: DbOrTx,
+  workspaceId: string,
+  input: Record<string, string>,
+  exceptId?: string,
+) {
   const existing = await listCategories(db, workspaceId);
   for (const [locale, name] of Object.entries(input)) {
     const clash = existing.find(
       (c) => c.id !== exceptId && c.names[locale]?.toLowerCase() === name.toLowerCase(),
     );
-    if (clash) throw new AppError("conflict", `A category named "${name}" already exists`, { locale });
+    if (clash)
+      throw new AppError("conflict", `A category named "${name}" already exists`, { locale });
   }
 }
 
@@ -110,7 +123,11 @@ export async function getCategory(db: DbOrTx, workspaceId: string, id: string) {
   return cat;
 }
 
-export async function updateCategory(ctx: Ctx, id: string, raw: z.input<typeof UpdateCategoryInput>) {
+export async function updateCategory(
+  ctx: Ctx,
+  id: string,
+  raw: z.input<typeof UpdateCategoryInput>,
+) {
   assertCan(ctx, "categories:write");
   const input = UpdateCategoryInput.parse(raw);
   await getCategory(ctx.db, ctx.workspaceId, id);
@@ -142,5 +159,7 @@ export async function reorderCategories(ctx: Ctx, orderedIds: string[]) {
 export async function deleteCategory(ctx: Ctx, id: string) {
   assertCan(ctx, "categories:write");
   await getCategory(ctx.db, ctx.workspaceId, id);
-  await ctx.db.delete(categories).where(and(eq(categories.id, id), eq(categories.workspaceId, ctx.workspaceId)));
+  await ctx.db
+    .delete(categories)
+    .where(and(eq(categories.id, id), eq(categories.workspaceId, ctx.workspaceId)));
 }

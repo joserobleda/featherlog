@@ -22,7 +22,11 @@ export function SwitchRow({
   label,
   description,
   ...props
-}: React.ComponentProps<typeof S.Root> & { id: string; label: React.ReactNode; description?: React.ReactNode }) {
+}: React.ComponentProps<typeof S.Root> & {
+  id: string;
+  label: React.ReactNode;
+  description?: React.ReactNode;
+}) {
   return (
     <div className="flex items-start justify-between gap-6 py-3">
       <div className="grid gap-0.5">

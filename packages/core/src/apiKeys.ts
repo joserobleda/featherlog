@@ -70,7 +70,10 @@ export async function verifyApiKey(
   secret: string,
 ): Promise<{ workspaceId: string; actor: Actor; apiKeyId: string } | null> {
   if (!secret.startsWith(KEY_PREFIX)) return null;
-  const [k] = await db.select().from(apiKeys).where(eq(apiKeys.hash, sha256(secret)));
+  const [k] = await db
+    .select()
+    .from(apiKeys)
+    .where(eq(apiKeys.hash, sha256(secret)));
   if (!k || k.revokedAt || (k.expiresAt && k.expiresAt.getTime() < Date.now())) return null;
   if (!k.lastUsedAt || Date.now() - k.lastUsedAt.getTime() > 60_000) {
     await db.update(apiKeys).set({ lastUsedAt: new Date() }).where(eq(apiKeys.id, k.id));

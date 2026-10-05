@@ -1,4 +1,4 @@
-import { Bot, Globe2, Github, PanelTop } from "lucide-react";
+import { Bot, Github, Globe2, PanelTop } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getTranslations } from "next-intl/server";
@@ -36,7 +36,10 @@ export default async function Home() {
         </div>
         <ul className="mt-6 grid gap-3 sm:grid-cols-2">
           {features.map(({ icon: Icon, text }) => (
-            <li key={text} className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 text-sm">
+            <li
+              key={text}
+              className="flex items-center gap-3 rounded-xl border border-border bg-surface px-4 py-3 text-sm"
+            >
               <Icon className="size-4 text-brand" /> {text}
             </li>
           ))}

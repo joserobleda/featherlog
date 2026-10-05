@@ -32,7 +32,10 @@ export const CreateWorkspaceInput = z.object({
   name: z.string().trim().min(1).max(80),
   slug: slugSchema.optional(),
   defaultLocale: localeSchema.default("en"),
-  websiteUrl: z.url().optional().or(z.literal("").transform(() => undefined)),
+  websiteUrl: z
+    .url()
+    .optional()
+    .or(z.literal("").transform(() => undefined)),
 });
 
 export const UpdateWorkspaceInput = z
@@ -40,7 +43,10 @@ export const UpdateWorkspaceInput = z
     name: z.string().trim().min(1).max(80),
     slug: slugSchema,
     logoUrl: z.string().max(2048).nullable(),
-    websiteUrl: z.url().nullable().or(z.literal("").transform(() => null)),
+    websiteUrl: z
+      .url()
+      .nullable()
+      .or(z.literal("").transform(() => null)),
     accentColor: colorSchema,
     terminology: z.enum(TERMINOLOGY),
     whitelabel: z.boolean(),
@@ -56,7 +62,10 @@ export const UpdateWorkspaceInput = z
 
 export async function isSlugAvailable(db: DbOrTx, slug: string, exceptWorkspaceId?: string) {
   if (RESERVED_SLUGS.has(slug)) return false;
-  const [ws] = await db.select({ id: workspaces.id }).from(workspaces).where(eq(workspaces.slug, slug));
+  const [ws] = await db
+    .select({ id: workspaces.id })
+    .from(workspaces)
+    .where(eq(workspaces.slug, slug));
   if (ws && ws.id !== exceptWorkspaceId) return false;
   const [redirect] = await db
     .select({ workspaceId: slugRedirects.workspaceId })
@@ -75,12 +84,17 @@ async function uniqueSlug(db: DbOrTx, base: string) {
 }
 
 /** Creates a workspace owned by `userId`, with default categories and widget settings. */
-export async function createWorkspace(db: Db, userId: string, rawInput: z.input<typeof CreateWorkspaceInput>) {
+export async function createWorkspace(
+  db: Db,
+  userId: string,
+  rawInput: z.input<typeof CreateWorkspaceInput>,
+) {
   const input = CreateWorkspaceInput.parse(rawInput);
   return db.transaction(async (tx) => {
     let slug = input.slug;
     if (slug) {
-      if (!(await isSlugAvailable(tx, slug))) throw new AppError("conflict", "This URL is already taken", { field: "slug" });
+      if (!(await isSlugAvailable(tx, slug)))
+        throw new AppError("conflict", "This URL is already taken", { field: "slug" });
     } else {
       slug = await uniqueSlug(tx, input.name);
     }
@@ -102,7 +116,9 @@ export async function createWorkspace(db: Db, userId: string, rawInput: z.input<
     let position = 0;
     for (const def of DEFAULT_CATEGORIES) {
       const categoryId = newId();
-      await tx.insert(categories).values({ id: categoryId, workspaceId: id, color: def.color, position: position++ });
+      await tx
+        .insert(categories)
+        .values({ id: categoryId, workspaceId: id, color: def.color, position: position++ });
       const name = def.names[input.defaultLocale] ?? def.names.en!;
       await tx.insert(categoryTranslations).values({
         categoryId,
@@ -138,7 +154,10 @@ export async function findWorkspaceByPublicId(db: DbOrTx, publicId: string) {
 }
 
 export async function findWorkspaceByDomain(db: DbOrTx, domain: string) {
-  const [ws] = await db.select().from(workspaces).where(eq(workspaces.customDomain, domain.toLowerCase()));
+  const [ws] = await db
+    .select()
+    .from(workspaces)
+    .where(eq(workspaces.customDomain, domain.toLowerCase()));
   return ws ?? null;
 }
 
@@ -151,7 +170,11 @@ export async function listUserWorkspaces(db: DbOrTx, userId: string) {
     .orderBy(asc(workspaces.name));
 }
 
-export async function getMembershipRole(db: DbOrTx, workspaceId: string, userId: string): Promise<Role | null> {
+export async function getMembershipRole(
+  db: DbOrTx,
+  workspaceId: string,
+  userId: string,
+): Promise<Role | null> {
   const [m] = await db
     .select({ role: memberships.role })
     .from(memberships)

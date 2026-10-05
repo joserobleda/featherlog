@@ -27,7 +27,11 @@ export const localeInfo = (code: string) => LOCALES.find((l) => l.code === code)
  * Picks the best locale among `available` for a requested language tag
  * ("es-MX" → "es"), falling back to `fallback`.
  */
-export function negotiateLocale(requested: string | null | undefined, available: string[], fallback: string) {
+export function negotiateLocale(
+  requested: string | null | undefined,
+  available: string[],
+  fallback: string,
+) {
   if (!requested) return fallback;
   for (const tag of requested.split(",")) {
     const code = tag.split(";")[0]?.trim().toLowerCase().split("-")[0];

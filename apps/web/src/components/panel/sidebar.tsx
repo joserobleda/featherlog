@@ -130,7 +130,9 @@ export function Sidebar({
           {t("viewPublic")}
         </a>
       </nav>
-      <div className="mt-6 px-5 pb-1 text-xs font-medium uppercase tracking-wide text-fg-muted/80">{t("settings")}</div>
+      <div className="mt-6 px-5 pb-1 text-xs font-medium uppercase tracking-wide text-fg-muted/80">
+        {t("settings")}
+      </div>
       <nav className="grid gap-0.5 px-3">{settings.map((s) => link(s.href, s.label, s.icon))}</nav>
       <div className="mt-auto border-t border-border p-3">
         <Dropdown>

@@ -19,7 +19,11 @@ export async function getUser(db: DbOrTx, id: string) {
   return u;
 }
 
-export async function updateProfile(db: DbOrTx, userId: string, raw: z.input<typeof UpdateProfileInput>) {
+export async function updateProfile(
+  db: DbOrTx,
+  userId: string,
+  raw: z.input<typeof UpdateProfileInput>,
+) {
   const input = UpdateProfileInput.parse(raw);
   const [u] = await db
     .update(user)

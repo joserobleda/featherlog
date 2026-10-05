@@ -156,7 +156,10 @@ export async function getPublicFeed(db: DbOrTx, ws: Workspace, opts: FeedOptions
   const cursor = opts.cursor ? decodeCursor(opts.cursor) : null;
   if (cursor) {
     where.push(
-      or(lt(posts.publishedAt, cursor.at), and(eq(posts.publishedAt, cursor.at), lt(posts.id, cursor.id)))!,
+      or(
+        lt(posts.publishedAt, cursor.at),
+        and(eq(posts.publishedAt, cursor.at), lt(posts.id, cursor.id)),
+      )!,
     );
   }
   const rows = await db
@@ -175,13 +178,23 @@ export async function getPublicFeed(db: DbOrTx, ws: Workspace, opts: FeedOptions
     nextCursor: rows.length > limit && last ? encodeCursor(last.publishedAt!, last.id) : null,
     locale,
     category: category
-      ? { id: category.id, name: categoryName(category, locale, ws.defaultLocale), color: category.color }
+      ? {
+          id: category.id,
+          name: categoryName(category, locale, ws.defaultLocale),
+          color: category.color,
+        }
       : null,
   };
 }
 
 /** A single visible post by its public id, or null. */
-export async function getPublicPost(db: DbOrTx, ws: Workspace, publicId: string, locale: string, now = new Date()) {
+export async function getPublicPost(
+  db: DbOrTx,
+  ws: Workspace,
+  publicId: string,
+  locale: string,
+  now = new Date(),
+) {
   const loc = resolveLocale(ws, locale);
   const [row] = await db
     .select()
@@ -198,14 +211,23 @@ export async function getPublicPost(db: DbOrTx, ws: Workspace, publicId: string,
 /** Visible post ids + dates — used for sitemaps. */
 export async function listVisiblePostRefs(db: DbOrTx, ws: Workspace, now = new Date()) {
   return db
-    .select({ id: posts.id, publicId: posts.publicId, publishedAt: posts.publishedAt, updatedAt: posts.updatedAt })
+    .select({
+      id: posts.id,
+      publicId: posts.publicId,
+      publishedAt: posts.publishedAt,
+      updatedAt: posts.updatedAt,
+    })
     .from(posts)
     .where(and(...visible(ws.id, now)))
     .orderBy(desc(posts.publishedAt));
 }
 
 /** Public URL path of a post, relative to the workspace root. */
-export function publicPostPath(ws: Pick<Workspace, "defaultLocale">, post: Pick<PublicPost, "slug" | "publicId">, locale: string) {
+export function publicPostPath(
+  ws: Pick<Workspace, "defaultLocale">,
+  post: Pick<PublicPost, "slug" | "publicId">,
+  locale: string,
+) {
   const prefix = locale === ws.defaultLocale ? "" : `/${locale}`;
   return `${prefix}/${post.slug}-${post.publicId}`;
 }

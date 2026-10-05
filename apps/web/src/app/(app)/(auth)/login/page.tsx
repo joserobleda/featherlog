@@ -10,7 +10,11 @@ export const metadata = { title: "Sign in" };
 
 const safeNext = (n?: string) => (n?.startsWith("/") && !n.startsWith("//") ? n : "/app");
 
-export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string }> }) {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string }>;
+}) {
   const { next } = await searchParams;
   const target = safeNext(next);
   if (await getSession()) redirect(target);
@@ -23,7 +27,10 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         env.SIGNUP_MODE !== "closed" ? (
           <>
             {t("noAccount")}{" "}
-            <Link className="font-medium text-brand hover:underline" href={`/signup${next ? `?next=${encodeURIComponent(target)}` : ""}`}>
+            <Link
+              className="font-medium text-brand hover:underline"
+              href={`/signup${next ? `?next=${encodeURIComponent(target)}` : ""}`}
+            >
               {t("signUp")}
             </Link>
           </>

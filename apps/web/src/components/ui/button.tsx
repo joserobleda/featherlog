@@ -14,7 +14,12 @@ export const buttonVariants = cva(
         danger: "bg-danger text-white hover:bg-red-700 shadow-sm",
         link: "text-brand underline-offset-4 hover:underline px-0",
       },
-      size: { sm: "h-8 px-3 text-[13px]", md: "h-9 px-4", lg: "h-11 px-6 text-base", icon: "size-9" },
+      size: {
+        sm: "h-8 px-3 text-[13px]",
+        md: "h-9 px-4",
+        lg: "h-11 px-6 text-base",
+        icon: "size-9",
+      },
     },
     defaultVariants: { variant: "primary", size: "md" },
   },
@@ -23,7 +28,16 @@ export const buttonVariants = cva(
 export type ButtonProps = React.ComponentProps<"button"> &
   VariantProps<typeof buttonVariants> & { asChild?: boolean; loading?: boolean };
 
-export function Button({ className, variant, size, asChild, loading, children, disabled, ...props }: ButtonProps) {
+export function Button({
+  className,
+  variant,
+  size,
+  asChild,
+  loading,
+  children,
+  disabled,
+  ...props
+}: ButtonProps) {
   if (asChild) {
     return (
       <Slot.Root className={cn(buttonVariants({ variant, size }), className)} {...props}>
@@ -33,9 +47,16 @@ export function Button({ className, variant, size, asChild, loading, children, d
   }
   const Comp = "button";
   return (
-    <Comp className={cn(buttonVariants({ variant, size }), className)} disabled={disabled || loading} {...props}>
+    <Comp
+      className={cn(buttonVariants({ variant, size }), className)}
+      disabled={disabled || loading}
+      {...props}
+    >
       {loading ? (
-        <span className="size-4 animate-spin rounded-full border-2 border-current border-r-transparent" aria-hidden />
+        <span
+          className="size-4 animate-spin rounded-full border-2 border-current border-r-transparent"
+          aria-hidden
+        />
       ) : null}
       {children}
     </Comp>

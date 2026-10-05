@@ -1,0 +1,23 @@
+{
+  "title": "Authorize {client}",
+  "subtitle": "{client} wants to access your Featherlog account",
+  "signedInAs": "Signed in as {email}",
+  "permissions": "It will be able to:",
+  "allow": "Allow access",
+  "deny": "Deny",
+  "unknownClient": "An application",
+  "footnote": "Integrations create drafts unless a workspace admin allows them to publish (Settings → API & MCP). You can revoke access at any time.",
+  "scopes": {
+    "openid": "Confirm your identity",
+    "profile": "See your name and profile picture",
+    "email": "See your email address",
+    "offline_access": "Stay connected without asking again",
+    "posts:read": "Read posts, including drafts",
+    "posts:write": "Create and edit posts",
+    "posts:publish": "Publish, schedule and unpublish posts",
+    "categories:write": "Manage categories",
+    "assets:write": "Upload images",
+    "settings:write": "Change workspace and widget settings",
+    "members:admin": "Invite and manage team members"
+  }
+}

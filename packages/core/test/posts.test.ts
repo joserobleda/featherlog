@@ -26,7 +26,9 @@ describe("posts", () => {
   it("creates a draft, renders markdown and derives categories from inline markers", async () => {
     const f = await workspaceFixture(t.db);
     const post = await createPost(f.owner, {
-      translations: { en: { title: "Dark mode is here!", contentMd: "[New]\n\nYou can now **switch** themes." } },
+      translations: {
+        en: { title: "Dark mode is here!", contentMd: "[New]\n\nYou can now **switch** themes." },
+      },
     });
     expect(post.status).toBe("draft");
     expect(post.translations.en?.slug).toBe("dark-mode-is-here");
@@ -39,12 +41,17 @@ describe("posts", () => {
 
   it("publishes, schedules and unpublishes; visibility follows publishedAt without cron", async () => {
     const f = await workspaceFixture(t.db);
-    const p = await createPost(f.owner, { translations: { en: { title: "Soon", contentMd: "x" } } });
+    const p = await createPost(f.owner, {
+      translations: { en: { title: "Soon", contentMd: "x" } },
+    });
     const future = new Date(Date.now() + 60_000);
     const scheduled = await schedulePost(f.owner, p.id, future);
     expect(scheduled.status).toBe("scheduled");
     expect((await getPublicFeed(t.db, f.ws, { locale: "en" })).items).toHaveLength(0);
-    const later = await getPublicFeed(t.db, f.ws, { locale: "en", now: new Date(Date.now() + 120_000) });
+    const later = await getPublicFeed(t.db, f.ws, {
+      locale: "en",
+      now: new Date(Date.now() + 120_000),
+    });
     expect(later.items.map((i) => i.title)).toEqual(["Soon"]);
 
     const published = await publishPost(f.owner, p.id, { at: new Date() });
@@ -61,17 +68,32 @@ describe("posts", () => {
   it("enforces optimistic concurrency with versions", async () => {
     const f = await workspaceFixture(t.db);
     const p = await createPost(f.owner, { translations: { en: { title: "V1" } } });
-    const v2 = await updatePost(f.owner, p.id, { translations: { en: { title: "V2" } } }, { expectedVersion: p.version });
+    const v2 = await updatePost(
+      f.owner,
+      p.id,
+      { translations: { en: { title: "V2" } } },
+      { expectedVersion: p.version },
+    );
     expect(v2.version).toBe(p.version + 1);
     await expect(
-      updatePost(f.owner, p.id, { translations: { en: { title: "stale" } } }, { expectedVersion: p.version }),
+      updatePost(
+        f.owner,
+        p.id,
+        { translations: { en: { title: "stale" } } },
+        { expectedVersion: p.version },
+      ),
     ).rejects.toMatchObject({ code: "precondition_failed" });
   });
 
   it("manages translations and rejects disabled locales", async () => {
     const f = await workspaceFixture(t.db, { locales: ["en", "es"] });
-    const p = await createPost(f.owner, { translations: { en: { title: "Hello", contentMd: "Hi" } } });
-    const withEs = await setTranslation(f.owner, p.id, "es", { title: "Hola", contentMd: "Buenas" });
+    const p = await createPost(f.owner, {
+      translations: { en: { title: "Hello", contentMd: "Hi" } },
+    });
+    const withEs = await setTranslation(f.owner, p.id, "es", {
+      title: "Hola",
+      contentMd: "Buenas",
+    });
     expect(Object.keys(withEs.translations).sort()).toEqual(["en", "es"]);
     await expect(setTranslation(f.owner, p.id, "fr", { title: "Salut" })).rejects.toMatchObject({
       code: "validation",
@@ -126,7 +148,11 @@ describe("posts", () => {
     expect(p3.nextCursor).toBeNull();
     const sec = await getPublicFeed(t.db, f.ws, { locale: "en", categorySlug: "security" });
     expect(sec.items.map((i) => i.title)).toEqual(["Post 3", "Post 1"]);
-    expect(sec.items[0]?.categories[0]).toMatchObject({ id: cat.id, name: "Security", color: "#00AA00" });
+    expect(sec.items[0]?.categories[0]).toMatchObject({
+      id: cat.id,
+      name: "Security",
+      color: "#00AA00",
+    });
   });
 
   it("lists posts for the panel with status filters, search and counts", async () => {
@@ -138,12 +164,17 @@ describe("posts", () => {
       publish: true,
       publishedAt: new Date(Date.now() + 3_600_000),
     });
-    expect((await listPosts(f.owner, { status: "draft" })).items.map((p) => p.translations.en?.title)).toEqual([
-      "Draft about billing",
-    ]);
+    expect(
+      (await listPosts(f.owner, { status: "draft" })).items.map((p) => p.translations.en?.title),
+    ).toEqual(["Draft about billing"]);
     expect((await listPosts(f.owner, { status: "scheduled" })).items).toHaveLength(1);
     expect((await listPosts(f.owner, { q: "billing" })).items).toHaveLength(1);
-    expect(await countPostsByStatus(f.owner)).toEqual({ all: 3, draft: 1, scheduled: 1, published: 1 });
+    expect(await countPostsByStatus(f.owner)).toEqual({
+      all: 3,
+      draft: 1,
+      scheduled: 1,
+      published: 1,
+    });
     const page = await listPosts(f.owner, { limit: 2 });
     expect(page.items).toHaveLength(2);
     const rest = await listPosts(f.owner, { limit: 2, cursor: page.nextCursor! });
@@ -164,21 +195,31 @@ describe("permissions", () => {
     const own = await createPost(f.owner, { translations: { en: { title: "Owner post" } } });
     const editorId = await createUser(t.db, "Ed");
     const editor = f.userCtx(editorId, "editor");
-    await expect(updatePost(editor, own.id, { translations: { en: { title: "x" } } })).rejects.toMatchObject({
+    await expect(
+      updatePost(editor, own.id, { translations: { en: { title: "x" } } }),
+    ).rejects.toMatchObject({
       code: "forbidden",
     });
     const mine = await createPost(editor, { translations: { en: { title: "Editor post" } } });
-    expect((await updatePost(editor, mine.id, { translations: { en: { title: "Edited" } } })).translations.en?.title).toBe(
-      "Edited",
-    );
+    expect(
+      (await updatePost(editor, mine.id, { translations: { en: { title: "Edited" } } }))
+        .translations.en?.title,
+    ).toBe("Edited");
     const admin = f.userCtx(await createUser(t.db), "admin");
-    await expect(updatePost(admin, mine.id, { translations: { en: { title: "By admin" } } })).resolves.toBeTruthy();
+    await expect(
+      updatePost(admin, mine.id, { translations: { en: { title: "By admin" } } }),
+    ).resolves.toBeTruthy();
   });
 
   it("integrations create drafts but cannot publish unless the workspace allows it", async () => {
     const f = await workspaceFixture(t.db);
     const key = f.ctx(
-      { kind: "api_key", apiKeyId: "k1", label: "CI bot", scopes: ["posts:read", "posts:write", "posts:publish"] },
+      {
+        kind: "api_key",
+        apiKeyId: "k1",
+        label: "CI bot",
+        scopes: ["posts:read", "posts:write", "posts:publish"],
+      },
       "api",
     );
     const draft = await createPost(key, { translations: { en: { title: "From CI" } } });
@@ -186,14 +227,18 @@ describe("permissions", () => {
     expect(draft.actorLabel).toBe("CI bot");
     expect(draft.author).toBeNull();
     await expect(publishPost(key, draft.id)).rejects.toMatchObject({ code: "forbidden" });
-    await expect(createPost(key, { translations: { en: { title: "x" } }, publish: true })).rejects.toMatchObject({
+    await expect(
+      createPost(key, { translations: { en: { title: "x" } }, publish: true }),
+    ).rejects.toMatchObject({
       code: "forbidden",
     });
     await updateWorkspace(f.owner, { integrationsCanPublish: true });
     expect((await publishPost(key, draft.id)).status).toBe("published");
     await updateWorkspace(f.owner, { integrationsCanPublish: false });
     // Published posts are off-limits to integrations again
-    await expect(updatePost(key, draft.id, { translations: { en: { title: "edit" } } })).rejects.toMatchObject({
+    await expect(
+      updatePost(key, draft.id, { translations: { en: { title: "edit" } } }),
+    ).rejects.toMatchObject({
       code: "forbidden",
     });
   });
@@ -201,18 +246,31 @@ describe("permissions", () => {
   it("api keys without the publish scope cannot publish", async () => {
     const f = await workspaceFixture(t.db);
     await updateWorkspace(f.owner, { integrationsCanPublish: true });
-    const key = f.ctx({ kind: "api_key", apiKeyId: "k2", label: "ro", scopes: ["posts:read", "posts:write"] }, "api");
+    const key = f.ctx(
+      { kind: "api_key", apiKeyId: "k2", label: "ro", scopes: ["posts:read", "posts:write"] },
+      "api",
+    );
     const p = await createPost(key, { translations: { en: { title: "x" } } });
     await expect(publishPost(key, p.id)).rejects.toMatchObject({ code: "forbidden" });
-    const ro = f.ctx({ kind: "api_key", apiKeyId: "k3", label: "ro", scopes: ["posts:read"] }, "api");
-    await expect(createPost(ro, { translations: { en: { title: "x" } } })).rejects.toMatchObject({ code: "forbidden" });
+    const ro = f.ctx(
+      { kind: "api_key", apiKeyId: "k3", label: "ro", scopes: ["posts:read"] },
+      "api",
+    );
+    await expect(createPost(ro, { translations: { en: { title: "x" } } })).rejects.toMatchObject({
+      code: "forbidden",
+    });
   });
 
   it("OAuth sessions are limited to the intersection of role and scopes", async () => {
     const f = await workspaceFixture(t.db);
-    const oauth = f.ctx({ kind: "user", userId: f.ownerId, role: "owner", scopes: ["posts:read"] }, "mcp");
-    await expect(createPost(oauth, { translations: { en: { title: "x" } } })).rejects.toMatchObject({
-      code: "forbidden",
-    });
+    const oauth = f.ctx(
+      { kind: "user", userId: f.ownerId, role: "owner", scopes: ["posts:read"] },
+      "mcp",
+    );
+    await expect(createPost(oauth, { translations: { en: { title: "x" } } })).rejects.toMatchObject(
+      {
+        code: "forbidden",
+      },
+    );
   });
 });

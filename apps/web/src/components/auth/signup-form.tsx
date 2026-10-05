@@ -65,15 +65,40 @@ export function SignupForm({
       ) : null}
       <form onSubmit={onSubmit} className="grid gap-4">
         <Field label={t("name")} htmlFor="name">
-          <Input id="name" autoComplete="name" required value={name} onChange={(e) => setName(e.target.value)} />
+          <Input
+            id="name"
+            autoComplete="name"
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
         </Field>
         <Field label={t("email")} htmlFor="email">
-          <Input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
         </Field>
         <Field label={t("password")} htmlFor="password" hint={t("passwordHint")}>
-          <Input id="password" type="password" autoComplete="new-password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} />
+          <Input
+            id="password"
+            type="password"
+            autoComplete="new-password"
+            required
+            minLength={8}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
         </Field>
-        {error ? <p className="text-sm text-danger" role="alert">{error}</p> : null}
+        {error ? (
+          <p className="text-sm text-danger" role="alert">
+            {error}
+          </p>
+        ) : null}
         <Button type="submit" loading={loading}>
           {t("signUp")}
         </Button>

@@ -16,7 +16,12 @@ export function ColorInput({
 }) {
   const valid = /^#[0-9a-fA-F]{6}$/.test(value);
   return (
-    <div className={cn("flex h-9 items-center gap-2 rounded-lg border border-border bg-surface pl-1.5 pr-3", className)}>
+    <div
+      className={cn(
+        "flex h-9 items-center gap-2 rounded-lg border border-border bg-surface pl-1.5 pr-3",
+        className,
+      )}
+    >
       <input
         type="color"
         aria-label="Pick a color"

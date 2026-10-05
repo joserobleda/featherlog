@@ -10,7 +10,11 @@ export const metadata = { title: "Sign up" };
 
 const safeNext = (n?: string) => (n?.startsWith("/") && !n.startsWith("//") ? n : "/app");
 
-export default async function SignupPage({ searchParams }: { searchParams: Promise<{ next?: string; email?: string; invite?: string }> }) {
+export default async function SignupPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ next?: string; email?: string; invite?: string }>;
+}) {
   const { next, email, invite } = await searchParams;
   const target = safeNext(next);
   if (await getSession()) redirect(target);
@@ -22,7 +26,10 @@ export default async function SignupPage({ searchParams }: { searchParams: Promi
       footer={
         <>
           {t("haveAccount")}{" "}
-          <Link className="font-medium text-brand hover:underline" href={`/login${next ? `?next=${encodeURIComponent(target)}` : ""}`}>
+          <Link
+            className="font-medium text-brand hover:underline"
+            href={`/login${next ? `?next=${encodeURIComponent(target)}` : ""}`}
+          >
             {t("signIn")}
           </Link>
         </>
