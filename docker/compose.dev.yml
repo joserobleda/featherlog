@@ -1,0 +1,29 @@
+# Servicios para desarrollo local: `pnpm services`
+name: featherlog-dev
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: featherlog
+      POSTGRES_PASSWORD: featherlog
+      POSTGRES_DB: featherlog
+    ports: ["5442:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U featherlog"]
+      interval: 2s
+      retries: 20
+  mailpit:
+    image: axllent/mailpit:latest
+    ports: ["8025:8025", "1025:1025"]
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: featherlog
+      MINIO_ROOT_PASSWORD: featherlog-secret
+    ports: ["9100:9000", "9101:9001"]
+    volumes: [miniodata:/data]
+volumes:
+  pgdata:
+  miniodata:

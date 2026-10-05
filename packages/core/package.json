@@ -1,0 +1,16 @@
+{
+  "name": "@featherlog/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": { "typecheck": "tsc --noEmit -p ." },
+  "dependencies": {
+    "@featherlog/db": "workspace:*",
+    "@featherlog/markdown": "workspace:*",
+    "drizzle-orm": "^0.45.3",
+    "nanoid": "^5.1.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": { "@electric-sql/pglite": "^0.5.8" }
+}
