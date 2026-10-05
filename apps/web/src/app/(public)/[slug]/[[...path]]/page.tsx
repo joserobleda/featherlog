@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { publicStrings, terminologyLabel } from "@/lib/public-i18n";
 import { listUrl, localePrefix, postUrl, rssUrl } from "@/lib/public-urls";
 import { Entry } from "../_components/entry";
-import { CategoryFilter, type LangLink, PublicShell } from "../_components/shell";
+import { ActiveCategory, CategoryMenu, type LangLink, PublicShell } from "../_components/shell";
 import {
   checkAccess,
   loadCategories,
@@ -249,8 +249,22 @@ export default async function PublicPage(props: Props) {
   }));
   const hrefFor = (cat: string | null) => home + qs({ category: cat, t: token });
   return (
-    <PublicShell ws={ws} locale={locale} homeHref={homeHref} langLinks={langLinks}>
-      <CategoryFilter
+    <PublicShell
+      ws={ws}
+      locale={locale}
+      homeHref={homeHref}
+      langLinks={langLinks}
+      actions={
+        <CategoryMenu
+          ws={ws}
+          locale={locale}
+          categories={categories}
+          active={category}
+          hrefFor={hrefFor}
+        />
+      }
+    >
+      <ActiveCategory
         ws={ws}
         locale={locale}
         categories={categories}
