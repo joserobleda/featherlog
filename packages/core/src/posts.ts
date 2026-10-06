@@ -7,7 +7,20 @@ import {
   user,
 } from "@featherlog/db";
 import { type MdCategory, renderMarkdown } from "@featherlog/markdown";
-import { and, desc, eq, exists, ilike, inArray, isNull, lt, or, type SQL, sql } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  exists,
+  ilike,
+  inArray,
+  isNotNull,
+  isNull,
+  lt,
+  or,
+  type SQL,
+  sql,
+} from "drizzle-orm";
 import { z } from "zod";
 import { actorLabel, actorUserId, assertCan, type Ctx, can } from "./auth";
 import { type Category, categoryName, listCategories } from "./categories";
@@ -17,7 +30,8 @@ import { newId, newPostPublicId, slugify } from "./ids";
 import { isLocale } from "./locales";
 import { getWorkspace, type Workspace } from "./workspaces";
 
-export type PostStatus = "draft" | "scheduled" | "published";
+/** `in_review`: an unpublished post an integration asked to publish, waiting for a human. */
+export type PostStatus = "draft" | "in_review" | "scheduled" | "published";
 
 export type PostTranslation = {
   locale: string;
@@ -47,6 +61,8 @@ export type Post = {
   author: PostAuthor | null;
   createdVia: string;
   actorLabel: string | null;
+  /** Set while the post waits for approval (status `in_review`). */
+  review: { requestedAt: Date; requestedBy: string | null } | null;
   version: number;
   createdAt: Date;
   updatedAt: Date;
@@ -55,10 +71,10 @@ export type Post = {
 };
 
 export function postStatus(
-  p: { published: boolean; publishedAt: Date | null },
+  p: { published: boolean; publishedAt: Date | null; reviewRequestedAt?: Date | null },
   now = new Date(),
 ): PostStatus {
-  if (!p.published) return "draft";
+  if (!p.published) return p.reviewRequestedAt ? "in_review" : "draft";
   if (p.publishedAt && p.publishedAt.getTime() > now.getTime()) return "scheduled";
   return "published";
 }
@@ -79,6 +95,8 @@ export const CreatePostInput = z.object({
   publishedAt: dateInput.nullable().optional(),
   /** Publish right away (or schedule, if `publishedAt` is in the future). Defaults to false (draft). */
   publish: z.boolean().default(false),
+  /** Leave it unpublished and ask a human to approve it (see `requestReview`). */
+  submitForReview: z.boolean().default(false),
   authorId: z.string().nullable().optional(),
 });
 
@@ -89,7 +107,7 @@ export const UpdatePostInput = z.object({
 });
 
 export const ListPostsInput = z.object({
-  status: z.enum(["all", "draft", "scheduled", "published"]).default("all"),
+  status: z.enum(["all", "draft", "in_review", "scheduled", "published"]).default("all"),
   locale: localeKey.optional(),
   /** Only posts missing a translation in this locale. */
   missingLocale: localeKey.optional(),
@@ -133,6 +151,9 @@ async function hydrate(db: DbOrTx, rows: (typeof posts.$inferSelect)[]): Promise
     author: authors.find((a) => a.id === r.authorId) ?? null,
     createdVia: r.createdVia,
     actorLabel: r.actorLabel,
+    review: r.reviewRequestedAt
+      ? { requestedAt: r.reviewRequestedAt, requestedBy: r.reviewRequestedBy }
+      : null,
     version: r.version,
     createdAt: r.createdAt,
     updatedAt: r.updatedAt,
@@ -233,9 +254,14 @@ async function assertAuthor(db: DbOrTx, workspaceId: string, authorId: string) {
     });
 }
 
+/** Whether publishing from this entry point needs a human's approval (integrations, when disabled). */
+function needsReview(ctx: Ctx, ws: Workspace) {
+  return ctx.via !== "panel" && !ws.integrationsCanPublish;
+}
+
 /** Integrations (API/MCP) can only publish — or touch published posts — when the workspace allows it. */
 function assertIntegrationMayPublish(ctx: Ctx, ws: Workspace) {
-  if (ctx.via !== "panel" && !ws.integrationsCanPublish) {
+  if (needsReview(ctx, ws)) {
     throw forbidden(
       "Publishing from integrations is disabled for this workspace. A workspace admin can enable it in Settings → API.",
     );
@@ -300,10 +326,10 @@ async function createPostImpl(ctx: Ctx, raw: z.input<typeof CreatePostInput>): P
       });
     }
   }
-  if (input.publish) {
-    assertCan(ctx, "posts:publish");
-    assertIntegrationMayPublish(ctx, ws);
-  }
+  // An integration that may not publish leaves the post waiting for approval instead.
+  const review = input.submitForReview || (input.publish && needsReview(ctx, ws));
+  const publish = input.publish && !review;
+  if (publish) assertCan(ctx, "posts:publish");
   let authorId = actorUserId(ctx.actor);
   if (input.authorId !== undefined) {
     if (input.authorId) await assertAuthor(ctx.db, ws.id, input.authorId);
@@ -316,10 +342,11 @@ async function createPostImpl(ctx: Ctx, raw: z.input<typeof CreatePostInput>): P
     workspaceId: ws.id,
     publicId: newPostPublicId(),
     authorId,
-    published: input.publish,
-    publishedAt: input.publishedAt ?? (input.publish ? new Date() : null),
+    published: publish,
+    publishedAt: input.publishedAt ?? (publish ? new Date() : null),
     createdVia: ctx.via,
     actorLabel: actorLabel(ctx.actor),
+    ...(review ? { reviewRequestedAt: new Date(), reviewRequestedBy: reviewer(ctx) } : {}),
   });
   for (const [locale, t] of Object.entries(input.translations)) {
     await ctx.db.insert(postTranslations).values({
@@ -333,6 +360,7 @@ async function createPostImpl(ctx: Ctx, raw: z.input<typeof CreatePostInput>): P
   await syncRendered(ctx.db, ws, id);
   const post = await getPost(ctx, id);
   await emit(ctx.db, ws.id, "post.created", { id, status: post.status });
+  if (review) await emit(ctx.db, ws.id, "post.review_requested", { id });
   if (post.published)
     await emit(ctx.db, ws.id, "post.published", { id, publishedAt: post.publishedAt });
   return post;
@@ -440,19 +468,85 @@ async function publishPostImpl(
   id: string,
   opts: { at?: Date | string | null; expectedVersion?: number } = {},
 ): Promise<Post> {
-  assertCan(ctx, "posts:publish");
   const row = await loadRow(ctx, id);
+  const ws = await getWorkspace(ctx.db, ctx.workspaceId);
+  if (!row.published && needsReview(ctx, ws)) return requestReviewImpl(ctx, id, opts);
+  assertCan(ctx, "posts:publish");
   assertCanEdit(ctx, row);
   assertVersion(row, opts.expectedVersion);
-  const ws = await getWorkspace(ctx.db, ctx.workspaceId);
   assertIntegrationMayPublish(ctx, ws);
-  const at = opts.at ? dateInput.parse(opts.at) : (row.publishedAt ?? new Date());
+  const now = new Date();
+  let at = opts.at ? dateInput.parse(opts.at) : (row.publishedAt ?? now);
+  // Approving a review: the requested date is kept only if it is still ahead.
+  if (row.reviewRequestedAt && at.getTime() < now.getTime()) at = now;
   await ctx.db
     .update(posts)
-    .set({ published: true, publishedAt: at, version: row.version + 1, updatedAt: new Date() })
+    .set({
+      published: true,
+      publishedAt: at,
+      reviewRequestedAt: null,
+      reviewRequestedBy: null,
+      version: row.version + 1,
+      updatedAt: now,
+    })
     .where(eq(posts.id, row.id));
   await emit(ctx.db, ws.id, "post.published", { id: row.id, publishedAt: at });
   return getPost(ctx, row.id);
+}
+
+/**
+ * Leaves an unpublished post waiting for a human to approve it, optionally with the date it
+ * should go out (`at`). Approving it is just publishing it from the dashboard.
+ */
+async function requestReviewImpl(
+  ctx: Ctx,
+  id: string,
+  opts: { at?: Date | string | null; expectedVersion?: number } = {},
+): Promise<Post> {
+  const row = await loadRow(ctx, id);
+  assertCanEdit(ctx, row);
+  assertVersion(row, opts.expectedVersion);
+  if (row.published) throw new AppError("validation", "The post is already published");
+  const now = new Date();
+  await ctx.db
+    .update(posts)
+    .set({
+      reviewRequestedAt: now,
+      reviewRequestedBy: reviewer(ctx),
+      ...(opts.at ? { publishedAt: dateInput.parse(opts.at) } : {}),
+      version: row.version + 1,
+      updatedAt: now,
+    })
+    .where(eq(posts.id, row.id));
+  await emit(ctx.db, ctx.workspaceId, "post.review_requested", { id: row.id });
+  return getPost(ctx, row.id);
+}
+
+/** Takes a post out of the review queue; it stays as a plain draft. */
+async function withdrawReviewImpl(
+  ctx: Ctx,
+  id: string,
+  opts: { expectedVersion?: number } = {},
+): Promise<Post> {
+  const row = await loadRow(ctx, id);
+  assertCanEdit(ctx, row);
+  assertVersion(row, opts.expectedVersion);
+  if (!row.reviewRequestedAt) return getPost(ctx, row.id);
+  await ctx.db
+    .update(posts)
+    .set({
+      reviewRequestedAt: null,
+      reviewRequestedBy: null,
+      version: row.version + 1,
+      updatedAt: new Date(),
+    })
+    .where(eq(posts.id, row.id));
+  await emit(ctx.db, ctx.workspaceId, "post.review_withdrawn", { id: row.id });
+  return getPost(ctx, row.id);
+}
+
+function reviewer(ctx: Ctx) {
+  return actorLabel(ctx.actor) ?? (ctx.via === "mcp" ? "MCP" : ctx.via === "api" ? "API" : null);
 }
 
 export async function schedulePost(
@@ -524,7 +618,10 @@ export async function listPosts(ctx: Ctx, raw: z.input<typeof ListPostsInput> = 
   const input = ListPostsInput.parse(raw);
   const now = new Date();
   const where: SQL[] = [eq(posts.workspaceId, ctx.workspaceId), isNull(posts.deletedAt)];
-  if (input.status === "draft") where.push(eq(posts.published, false));
+  if (input.status === "draft")
+    where.push(eq(posts.published, false), isNull(posts.reviewRequestedAt));
+  if (input.status === "in_review")
+    where.push(eq(posts.published, false), isNotNull(posts.reviewRequestedAt));
   if (input.status === "published")
     where.push(
       eq(posts.published, true),
@@ -608,13 +705,30 @@ export async function countPostsByStatus(ctx: Ctx) {
   const [r] = await ctx.db
     .select({
       all: sql<number>`count(*)::int`,
-      draft: sql<number>`count(*) filter (where not ${posts.published})::int`,
+      draft: sql<number>`count(*) filter (where not ${posts.published} and ${posts.reviewRequestedAt} is null)::int`,
+      in_review: sql<number>`count(*) filter (where not ${posts.published} and ${posts.reviewRequestedAt} is not null)::int`,
       scheduled: sql<number>`count(*) filter (where ${posts.published} and ${posts.publishedAt} > ${now.toISOString()}::timestamptz)::int`,
       published: sql<number>`count(*) filter (where ${posts.published} and ${posts.publishedAt} <= ${now.toISOString()}::timestamptz)::int`,
     })
     .from(posts)
     .where(and(eq(posts.workspaceId, ctx.workspaceId), isNull(posts.deletedAt)));
-  return r ?? { all: 0, draft: 0, scheduled: 0, published: 0 };
+  return r ?? { all: 0, draft: 0, in_review: 0, scheduled: 0, published: 0 };
+}
+
+/** Posts waiting for approval (no permission check: used to enrich integration responses). */
+export async function countPendingReview(db: DbOrTx, workspaceId: string) {
+  const [r] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(posts)
+    .where(
+      and(
+        eq(posts.workspaceId, workspaceId),
+        isNull(posts.deletedAt),
+        eq(posts.published, false),
+        isNotNull(posts.reviewRequestedAt),
+      ),
+    );
+  return r?.n ?? 0;
 }
 
 /** Re-renders all posts of a workspace (e.g. after renaming a category). */
@@ -642,6 +756,13 @@ export const publishPost = (
   id: string,
   opts: { at?: Date | string | null; expectedVersion?: number } = {},
 ) => inTx(ctx, (c) => publishPostImpl(c, id, opts));
+export const requestReview = (
+  ctx: Ctx,
+  id: string,
+  opts: { at?: Date | string | null; expectedVersion?: number } = {},
+) => inTx(ctx, (c) => requestReviewImpl(c, id, opts));
+export const withdrawReview = (ctx: Ctx, id: string, opts: { expectedVersion?: number } = {}) =>
+  inTx(ctx, (c) => withdrawReviewImpl(c, id, opts));
 export const unpublishPost = (ctx: Ctx, id: string, opts: { expectedVersion?: number } = {}) =>
   inTx(ctx, (c) => unpublishPostImpl(c, id, opts));
 export const deletePost = (ctx: Ctx, id: string, opts: { expectedVersion?: number } = {}) =>

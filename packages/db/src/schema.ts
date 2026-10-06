@@ -199,6 +199,10 @@ export const posts = pgTable(
     publishedAt: ts("published_at"),
     createdVia: text("created_via").notNull().default("panel"),
     actorLabel: text("actor_label"),
+    /** Set while an unpublished post waits for a human to approve it (sent by an integration). */
+    reviewRequestedAt: ts("review_requested_at"),
+    /** Who asked for the review (API key name, MCP client…). */
+    reviewRequestedBy: text("review_requested_by"),
     /** Incremented on every change; exposed as ETag for optimistic concurrency. */
     version: integer("version").notNull().default(1),
     createdAt: createdAt(),

@@ -7,6 +7,7 @@ import {
   publishPost,
   unpublishPost,
   updatePost,
+  withdrawReview,
 } from "@featherlog/core";
 import { revalidatePath } from "next/cache";
 import { runAction } from "@/lib/actions";
@@ -26,6 +27,7 @@ export type SavePostInput = {
 export type SavedPost = Pick<Post, "id" | "publicId" | "version" | "status" | "published"> & {
   publishedAt: string | null;
   slugs: Record<string, string>;
+  review: { requestedAt: string; requestedBy: string | null } | null;
 };
 
 const toSaved = (p: Post): SavedPost => ({
@@ -36,6 +38,9 @@ const toSaved = (p: Post): SavedPost => ({
   published: p.published,
   publishedAt: p.publishedAt?.toISOString() ?? null,
   slugs: Object.fromEntries(Object.entries(p.translations).map(([l, t]) => [l, t.slug])),
+  review: p.review
+    ? { requestedAt: p.review.requestedAt.toISOString(), requestedBy: p.review.requestedBy }
+    : null,
 });
 
 export async function savePostAction(input: SavePostInput) {
@@ -75,7 +80,18 @@ export async function savePostAction(input: SavePostInput) {
         post = await publishPost(ctx, post.id, { at: publishedAt });
       else if (!input.published && post.published) post = await unpublishPost(ctx, post.id);
     }
-    revalidatePath(`/app/${workspace.slug}/posts`);
+    // The layout shows the review-queue counter in the sidebar.
+    revalidatePath(`/app/${workspace.slug}`, "layout");
+    return toSaved(post);
+  });
+}
+
+/** "Return to draft": takes a post sent by an integration out of the review queue. */
+export async function withdrawReviewAction(workspaceSlug: string, id: string, version?: number) {
+  const { ctx, workspace } = await getWorkspaceContext(workspaceSlug);
+  return runAction(async () => {
+    const post = await withdrawReview(ctx, id, { expectedVersion: version });
+    revalidatePath(`/app/${workspace.slug}`, "layout");
     return toSaved(post);
   });
 }
@@ -84,6 +100,6 @@ export async function deletePostAction(workspaceSlug: string, id: string) {
   const { ctx, workspace } = await getWorkspaceContext(workspaceSlug);
   return runAction(async () => {
     await deletePost(ctx, id);
-    revalidatePath(`/app/${workspace.slug}/posts`);
+    revalidatePath(`/app/${workspace.slug}`, "layout");
   });
 }

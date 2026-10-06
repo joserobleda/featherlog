@@ -2,7 +2,7 @@ import { Client, StreamableHTTPClientTransport } from "@modelcontextprotocol/cli
 import { expect, test } from "@playwright/test";
 import { fixture } from "./fixture";
 
-test("MCP: an agent drafts and translates a post; publishing is blocked by default", async ({
+test("MCP: an agent drafts and translates a post; publishing goes to review by default", async ({
   baseURL,
 }) => {
   const f = fixture();
@@ -15,7 +15,13 @@ test("MCP: an agent drafts and translates a post; publishing is blocked by defau
   try {
     const tools = (await client.listTools()).tools.map((t) => t.name);
     expect(tools).toEqual(
-      expect.arrayContaining(["create_post", "set_translation", "publish_post", "upload_image"]),
+      expect.arrayContaining([
+        "create_post",
+        "set_translation",
+        "publish_post",
+        "request_review",
+        "upload_image",
+      ]),
     );
 
     const created = await client.callTool({
@@ -42,7 +48,25 @@ test("MCP: an agent drafts and translates a post; publishing is blocked by defau
     expect(translated.isError).toBeFalsy();
 
     const publish = await client.callTool({ name: "publish_post", arguments: { id: post.id } });
-    expect(publish.isError).toBe(true);
+    expect(publish.isError).toBeFalsy();
+    const queued = publish.structuredContent as {
+      status: string;
+      adminUrl: string;
+      pendingReviewCount: number;
+    };
+    expect(queued.status).toBe("in_review");
+    expect(queued.adminUrl).toContain(`/posts/${post.id}`);
+    expect(queued.pendingReviewCount).toBeGreaterThanOrEqual(1);
+    const queue = await client.callTool({
+      name: "list_posts",
+      arguments: { status: "in_review" },
+    });
+    const listed = queue.structuredContent as {
+      items: { id: string }[];
+      pendingReviewCount: number;
+    };
+    expect(listed.items.map((p) => p.id)).toContain(post.id);
+    expect(listed.pendingReviewCount).toBe(queued.pendingReviewCount);
 
     const guide = await client.readResource({ uri: "featherlog://guide/markdown" });
     expect((guide.contents[0] as { text: string }).text).toContain("[");

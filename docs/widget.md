@@ -206,6 +206,8 @@ The inside of the popup is styled by Featherlog and follows the widget's accent 
 | Badge count expires | never, or 1–365 days | Posts older than this don't count as new. |
 | Soft hide (default on) | on / off | When nothing is new: **on** shows a small grey dot, so the visitor can still open the widget. **Off** hides the badge completely. |
 | Eye-catcher | off / on (default) / progressive | `on`: the badge pulses while there are unseen posts. `progressive`: the animation gets stronger the longer updates stay unseen (from the 3rd and 6th page view). |
+| Category and date | above (default) / below the title | Where the category chips and the date go in the list. |
+| Always show "See all updates" | on / off (default) | **On** pins the footer link to the bottom of the popup. **Off** shows it after the last entry. |
 | Widget texts | per language | Overrides the built-in title, "Read more", footer link, back button, empty state and "New" label. |
 
 The page also has a live preview of the real widget.

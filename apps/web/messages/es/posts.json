@@ -4,17 +4,27 @@
   "new": "Nueva entrada",
   "tabs": {
     "all": "Todas",
+    "in_review": "Pendientes",
     "draft": "Borradores",
     "scheduled": "Programadas",
     "published": "Publicadas"
   },
-  "status": { "draft": "Borrador", "scheduled": "Programada", "published": "Publicada" },
+  "status": {
+    "draft": "Borrador",
+    "scheduled": "Programada",
+    "published": "Publicada",
+    "in_review": "En revisión"
+  },
   "searchPlaceholder": "Buscar entradas…",
   "allLanguages": "Todos los idiomas",
   "missingIn": "Falta en {language}",
   "loadMore": "Cargar más",
   "untitled": "Sin título",
-  "via": { "api": "vía API", "mcp": "vía MCP", "panel": "" },
+  "via": {
+    "api": "vía API",
+    "mcp": "vía MCP",
+    "panel": ""
+  },
   "by": "por {name}",
   "empty": "Aún no hay entradas",
   "emptyDescription": "Escribe tu primera novedad: aparecerá en tu página pública y en el widget.",
@@ -75,6 +85,18 @@
     },
     "titleRequired": "Añade un título antes de guardar",
     "back": "Todas las entradas",
-    "viewLive": "Ver publicada"
-  }
+    "viewLive": "Ver publicada",
+    "review": {
+      "approved": "Aprobada",
+      "returned": "Devuelta a borradores",
+      "title": "Pendiente de revisión — enviada por {by}",
+      "when": "el {date}",
+      "goesOutAt": "se publicará el {date} al aprobarla",
+      "goesOutNow": "se publicará en cuanto se apruebe",
+      "approve": "Aprobar y publicar",
+      "approveSchedule": "Aprobar y programar",
+      "returnToDraft": "Devolver a borrador"
+    }
+  },
+  "sentToReview": "Enviada a revisión el {date}"
 }

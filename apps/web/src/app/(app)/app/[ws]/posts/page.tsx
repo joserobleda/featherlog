@@ -23,7 +23,7 @@ import { PostFilters } from "./post-filters";
 
 export const metadata = { title: "Posts" };
 
-const STATUSES = ["all", "draft", "scheduled", "published"] as const;
+const STATUSES = ["all", "in_review", "draft", "scheduled", "published"] as const;
 type Status = (typeof STATUSES)[number];
 
 export default async function PostsPage({
@@ -95,19 +95,31 @@ export default async function PostsPage({
       />
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <nav className="flex gap-1 rounded-lg bg-muted p-1" aria-label="Status">
-          {STATUSES.map((s) => (
-            <Link
-              key={s}
-              href={qs({ status: s, cursor: undefined })}
-              className={cn(
-                "rounded-md px-3 py-1 text-sm text-fg-muted hover:text-fg",
-                s === status && "bg-surface font-medium text-fg shadow-xs",
-              )}
-              aria-current={s === status ? "page" : undefined}
-            >
-              {t(`tabs.${s}`)} <span className="ml-1 text-xs text-fg-muted">{counts[s]}</span>
-            </Link>
-          ))}
+          {STATUSES.filter((s) => s !== "in_review" || counts.in_review > 0 || status === s).map(
+            (s) => (
+              <Link
+                key={s}
+                href={qs({ status: s, cursor: undefined })}
+                className={cn(
+                  "rounded-md px-3 py-1 text-sm text-fg-muted hover:text-fg",
+                  s === status && "bg-surface font-medium text-fg shadow-xs",
+                )}
+                aria-current={s === status ? "page" : undefined}
+              >
+                {t(`tabs.${s}`)}{" "}
+                <span
+                  className={cn(
+                    "ml-1 text-xs text-fg-muted",
+                    s === "in_review" &&
+                      counts.in_review > 0 &&
+                      "rounded-full bg-amber-500/15 px-1.5 font-semibold text-amber-700 dark:text-amber-400",
+                  )}
+                >
+                  {counts[s]}
+                </span>
+              </Link>
+            ),
+          )}
         </nav>
         <PostFilters
           locales={workspace.locales.map((code) => ({
@@ -172,14 +184,21 @@ export default async function PostsPage({
                       dateTime={date.toISOString()}
                       title={format.dateTime(date, { dateStyle: "full", timeStyle: "short" })}
                     >
-                      {p.status === "scheduled"
-                        ? t("scheduledFor", {
-                            date: format.dateTime(date, {
+                      {p.status === "in_review" && p.review
+                        ? t("sentToReview", {
+                            date: format.dateTime(p.review.requestedAt, {
                               dateStyle: "medium",
                               timeStyle: "short",
                             }),
                           })
-                        : format.dateTime(date, { dateStyle: "medium" })}
+                        : p.status === "scheduled"
+                          ? t("scheduledFor", {
+                              date: format.dateTime(date, {
+                                dateStyle: "medium",
+                                timeStyle: "short",
+                              }),
+                            })
+                          : format.dateTime(date, { dateStyle: "medium" })}
                     </time>
                     {p.author ? (
                       <span className="inline-flex items-center gap-1.5">
@@ -255,6 +274,13 @@ export default async function PostsPage({
 }
 
 function StatusBadge({ status, label }: { status: Post["status"]; label: string }) {
-  const tone = status === "published" ? "success" : status === "scheduled" ? "warning" : "neutral";
+  const tone =
+    status === "published"
+      ? "success"
+      : status === "in_review"
+        ? "warning"
+        : status === "scheduled"
+          ? "brand"
+          : "neutral";
   return <Badge tone={tone}>{label}</Badge>;
 }

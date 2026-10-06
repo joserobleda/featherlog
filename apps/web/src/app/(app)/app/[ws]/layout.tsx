@@ -1,4 +1,4 @@
-import { can } from "@featherlog/core";
+import { can, countPendingReview } from "@featherlog/core";
 import { getLocale } from "next-intl/server";
 import { PanelShell } from "@/components/panel/panel-shell";
 import { getWorkspaceContext } from "@/lib/session";
@@ -29,6 +29,7 @@ export default async function WorkspaceLayout({
         },
         publicUrl: publicUrl(workspace.slug),
         canManage: can(ctx.actor, "settings:write"),
+        pendingReview: await countPendingReview(ctx.db, workspace.id),
         uiLocale: await getLocale(),
       }}
     >

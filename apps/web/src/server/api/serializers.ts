@@ -1,5 +1,17 @@
-import { type Category, type Post, publicPostPath, type Workspace } from "@featherlog/core";
+import {
+  type Category,
+  countPendingReview,
+  type Post,
+  publicPostPath,
+  type Workspace,
+} from "@featherlog/core";
+import { db } from "@/lib/db";
+import { env } from "@/lib/env";
 import { publicUrl } from "@/lib/urls";
+
+/** Dashboard link to a post (where a human reviews and approves it). */
+export const adminPostUrl = (ws: Workspace, p: Pick<Post, "id">) =>
+  `${env.APP_URL}/app/${ws.slug}/posts/${p.id}`;
 
 export function serializePost(ws: Workspace, p: Post) {
   return {
@@ -11,6 +23,13 @@ export function serializePost(ws: Workspace, p: Post) {
     author: p.author ? { id: p.author.id, name: p.author.displayName || p.author.name } : null,
     createdVia: p.createdVia,
     actorLabel: p.actorLabel,
+    adminUrl: adminPostUrl(ws, p),
+    review: p.review
+      ? {
+          requestedAt: p.review.requestedAt.toISOString(),
+          requestedBy: p.review.requestedBy,
+        }
+      : null,
     version: p.version,
     categoryIds: p.categoryIds,
     createdAt: p.createdAt.toISOString(),
@@ -35,6 +54,16 @@ export function serializePost(ws: Workspace, p: Post) {
       ]),
     ),
   };
+}
+
+/**
+ * `serializePost` plus the size of the review queue when the post is waiting for approval, so an
+ * integration can tell people ("3 updates waiting for review") without another call.
+ */
+export async function serializePostWithQueue(ws: Workspace, p: Post) {
+  const out = serializePost(ws, p);
+  if (p.status !== "in_review") return out;
+  return { ...out, pendingReviewCount: await countPendingReview(db, ws.id) };
 }
 
 export function serializeCategory(c: Category) {

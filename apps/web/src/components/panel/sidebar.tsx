@@ -41,6 +41,7 @@ export function Sidebar({
   publicUrl,
   canManage,
   uiLocale,
+  pendingReview = 0,
 }: {
   current: Ws;
   workspaces: Ws[];
@@ -48,6 +49,8 @@ export function Sidebar({
   publicUrl: string;
   canManage: boolean;
   uiLocale: string;
+  /** Posts sent by integrations waiting for approval. */
+  pendingReview?: number;
 }) {
   const t = useTranslations("nav");
   const tAuth = useTranslations("auth");
@@ -70,7 +73,13 @@ export function Sidebar({
     { href: `${base}/settings/api`, label: t("api"), icon: Bot, admin: true },
   ].filter((s) => canManage || !s.admin);
 
-  const link = (href: string, label: string, Icon: typeof FileText, exact = false) => {
+  const link = (
+    href: string,
+    label: string,
+    Icon: typeof FileText,
+    exact = false,
+    badge?: { count: number; title: string },
+  ) => {
     const active = exact ? pathname === href : pathname.startsWith(href);
     return (
       <Link
@@ -83,6 +92,14 @@ export function Sidebar({
       >
         <Icon className="size-4" />
         {label}
+        {badge && badge.count > 0 ? (
+          <span
+            title={badge.title}
+            className="ms-auto rounded-full bg-amber-500/15 px-1.5 text-[11px] font-semibold leading-[18px] text-amber-700 dark:text-amber-400"
+          >
+            {badge.count}
+          </span>
+        ) : null}
       </Link>
     );
   };
@@ -119,7 +136,10 @@ export function Sidebar({
         </Dropdown>
       </div>
       <nav className="grid gap-0.5 px-3">
-        {link(`${base}/posts`, t("posts"), FileText)}
+        {link(`${base}/posts`, t("posts"), FileText, false, {
+          count: pendingReview,
+          title: t("pendingReview", { count: pendingReview }),
+        })}
         <a
           href={publicUrl}
           target="_blank"

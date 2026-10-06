@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createCategory } from "../src/categories";
 import { getPublicFeed, getPublicPost } from "../src/feed";
 import {
+  countPendingReview,
   countPostsByStatus,
   createPost,
   deletePost,
@@ -10,10 +11,12 @@ import {
   ListPostsInput,
   listPosts,
   publishPost,
+  requestReview,
   schedulePost,
   setTranslation,
   unpublishPost,
   updatePost,
+  withdrawReview,
 } from "../src/posts";
 import { updateWorkspace } from "../src/workspaces";
 import { createUser, setup, workspaceFixture } from "./helpers";
@@ -174,6 +177,7 @@ describe("posts", () => {
     expect(await countPostsByStatus(f.owner)).toEqual({
       all: 3,
       draft: 1,
+      in_review: 0,
       scheduled: 1,
       published: 1,
     });
@@ -262,7 +266,7 @@ describe("permissions", () => {
     ).resolves.toBeTruthy();
   });
 
-  it("integrations create drafts but cannot publish unless the workspace allows it", async () => {
+  it("integrations create drafts; their publish requests go to review unless the workspace allows it", async () => {
     const f = await workspaceFixture(t.db);
     const key = f.ctx(
       {
@@ -277,12 +281,10 @@ describe("permissions", () => {
     expect(draft.createdVia).toBe("api");
     expect(draft.actorLabel).toBe("CI bot");
     expect(draft.author).toBeNull();
-    await expect(publishPost(key, draft.id)).rejects.toMatchObject({ code: "forbidden" });
-    await expect(
-      createPost(key, { translations: { en: { title: "x" } }, publish: true }),
-    ).rejects.toMatchObject({
-      code: "forbidden",
-    });
+    expect((await publishPost(key, draft.id)).status).toBe("in_review");
+    const viaCreate = await createPost(key, { translations: { en: { title: "x" } }, publish: true });
+    expect(viaCreate.status).toBe("in_review");
+    expect(viaCreate.published).toBe(false);
     await updateWorkspace(f.owner, { integrationsCanPublish: true });
     expect((await publishPost(key, draft.id)).status).toBe("published");
     await updateWorkspace(f.owner, { integrationsCanPublish: false });
@@ -292,6 +294,55 @@ describe("permissions", () => {
     ).rejects.toMatchObject({
       code: "forbidden",
     });
+  });
+
+  it("review queue: integrations ask, a person approves or returns it to drafts", async () => {
+    const f = await workspaceFixture(t.db);
+    const key = f.ctx(
+      { kind: "api_key", apiKeyId: "k9", label: "Cursor", scopes: ["posts:read", "posts:write"] },
+      "mcp",
+    );
+    const later = new Date(Date.now() + 86_400_000);
+    const a = await createPost(key, { translations: { en: { title: "A" } } });
+    const queued = await schedulePost(key, a.id, later);
+    expect(queued.status).toBe("in_review");
+    expect(queued.review?.requestedBy).toBe("Cursor");
+    expect(queued.publishedAt?.getTime()).toBe(later.getTime());
+    const b = await createPost(key, {
+      translations: { en: { title: "B" } },
+      submitForReview: true,
+    });
+    expect(b.status).toBe("in_review");
+    expect(await countPendingReview(t.db, f.ws.id)).toBe(2);
+    expect((await countPostsByStatus(f.owner)).in_review).toBe(2);
+    expect((await countPostsByStatus(f.owner)).draft).toBe(0);
+    const queue = await listPosts(f.owner, { status: "in_review" });
+    expect(queue.items.map((p) => p.id).sort()).toEqual([a.id, b.id].sort());
+    expect((await listPosts(f.owner, { status: "draft" })).items).toHaveLength(0);
+    // Nothing is public while waiting.
+    expect((await getPublicFeed(t.db, f.ws, { locale: "en" })).items).toHaveLength(0);
+
+    // Approving = publishing from the dashboard: keeps the requested future date…
+    const approved = await publishPost(f.owner, a.id);
+    expect(approved.status).toBe("scheduled");
+    expect(approved.review).toBeNull();
+    expect(approved.publishedAt?.getTime()).toBe(later.getTime());
+    // …and returning to drafts takes it out of the queue.
+    const back = await withdrawReview(f.owner, b.id);
+    expect(back.status).toBe("draft");
+    expect(await countPendingReview(t.db, f.ws.id)).toBe(0);
+
+    // A requested date that already passed publishes now.
+    const c = await createPost(key, {
+      translations: { en: { title: "C" } },
+      publishedAt: new Date("2020-01-01"),
+    });
+    await requestReview(key, c.id);
+    const cNow = await publishPost(f.owner, c.id);
+    expect(cNow.status).toBe("published");
+    expect(cNow.publishedAt!.getTime()).toBeGreaterThan(Date.now() - 60_000);
+    // Published posts cannot be sent to review.
+    await expect(requestReview(f.owner, c.id)).rejects.toMatchObject({ code: "validation" });
   });
 
   it("api keys without the publish scope cannot publish", async () => {

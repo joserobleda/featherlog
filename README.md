@@ -66,7 +66,7 @@ You only need one snippet for every language. The widget reads `<html lang>` or 
 
 ## Connect AI agents
 
-Featherlog runs an MCP server at **`<APP_URL>/mcp`**. By default, agents create **drafts**. Publishing from integrations is off until a workspace admin turns on **Settings → API & MCP → Integrations can publish**.
+Featherlog runs an MCP server at **`<APP_URL>/mcp`**. By default, agents create **drafts**, and what they publish waits in a **review queue** until a person approves it. A workspace admin can let them publish directly with **Settings → API & MCP → Integrations can publish**.
 
 - **Claude (web and desktop)**: Settings → Connectors → Add custom connector, paste `https://changelog.example.com/mcp`, then sign in. You don't need a key.
 - **Claude Code**:

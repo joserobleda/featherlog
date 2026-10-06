@@ -2,14 +2,29 @@
   "title": "Posts",
   "description": "Write, schedule and publish product updates.",
   "new": "New post",
-  "tabs": { "all": "All", "draft": "Drafts", "scheduled": "Scheduled", "published": "Published" },
-  "status": { "draft": "Draft", "scheduled": "Scheduled", "published": "Published" },
+  "tabs": {
+    "all": "All",
+    "in_review": "Pending review",
+    "draft": "Drafts",
+    "scheduled": "Scheduled",
+    "published": "Published"
+  },
+  "status": {
+    "draft": "Draft",
+    "scheduled": "Scheduled",
+    "published": "Published",
+    "in_review": "In review"
+  },
   "searchPlaceholder": "Search posts…",
   "allLanguages": "All languages",
   "missingIn": "Missing in {language}",
   "loadMore": "Load more",
   "untitled": "Untitled",
-  "via": { "api": "via API", "mcp": "via MCP", "panel": "" },
+  "via": {
+    "api": "via API",
+    "mcp": "via MCP",
+    "panel": ""
+  },
   "by": "by {name}",
   "empty": "No posts yet",
   "emptyDescription": "Write your first update — it will show up on your public page and in the widget.",
@@ -70,6 +85,18 @@
     },
     "titleRequired": "Add a title before saving",
     "back": "All posts",
-    "viewLive": "View live"
-  }
+    "viewLive": "View live",
+    "review": {
+      "approved": "Approved",
+      "returned": "Returned to drafts",
+      "title": "Waiting for review — sent by {by}",
+      "when": "on {date}",
+      "goesOutAt": "goes out on {date} once approved",
+      "goesOutNow": "goes out as soon as it is approved",
+      "approve": "Approve and publish",
+      "approveSchedule": "Approve and schedule",
+      "returnToDraft": "Return to draft"
+    }
+  },
+  "sentToReview": "Sent to review {date}"
 }

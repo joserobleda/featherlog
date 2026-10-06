@@ -19,6 +19,7 @@ import {
   listMembers,
   listPosts,
   publishPost,
+  requestReview,
   rerenderWorkspacePosts,
   SCOPES,
   schedulePost,
@@ -32,6 +33,7 @@ import {
   updateWorkspace,
   verifyApiKey,
   type Workspace,
+  withdrawReview,
   withIdempotency,
 } from "@featherlog/core";
 import { renderMarkdown } from "@featherlog/markdown";
@@ -52,6 +54,7 @@ import {
   expectedVersionFrom,
   serializeCategory,
   serializePost,
+  serializePostWithQueue,
   serializeWorkspace,
 } from "./serializers";
 import { fetchPublicUrl } from "./ssrf";
@@ -130,12 +133,23 @@ const PostOut = z
   .object({
     id: z.string(),
     publicId: z.string(),
-    status: z.enum(["draft", "scheduled", "published"]),
+    status: z.enum(["draft", "in_review", "scheduled", "published"]),
     published: z.boolean(),
     publishedAt: z.string().nullable(),
     author: z.object({ id: z.string(), name: z.string() }).nullable(),
     createdVia: z.string(),
     actorLabel: z.string().nullable(),
+    adminUrl: z
+      .string()
+      .openapi({ description: "The post in the dashboard (review and approve)." }),
+    review: z
+      .object({ requestedAt: z.string(), requestedBy: z.string().nullable() })
+      .nullable()
+      .openapi({ description: "Set while the post waits for approval (`in_review`)." }),
+    pendingReviewCount: z.number().optional().openapi({
+      description:
+        "Only when the post is `in_review`: how many posts are waiting for approval in the workspace.",
+    }),
     version: z
       .number()
       .openapi({ description: "Incremented on every change. Also returned as the ETag." }),
@@ -195,7 +209,10 @@ const CreatePostBody = z
     publishedAt: z.string().datetime({ offset: true }).nullable().optional(),
     publish: z.boolean().default(false).openapi({
       description:
-        "Publish right away (requires `posts:publish` and the workspace setting allowing integrations to publish).",
+        "Publish right away (requires `posts:publish` and the workspace setting allowing integrations to publish). Otherwise the post goes to the review queue.",
+    }),
+    submitForReview: z.boolean().default(false).openapi({
+      description: "Leave it waiting for a human to approve it in the dashboard (`in_review`).",
     }),
     authorId: z.string().nullable().optional(),
   })
@@ -423,7 +440,7 @@ api.openapi(
     description: "Newest first. Paginate with `cursor` (`nextCursor` from the previous page).",
     request: {
       query: z.object({
-        status: z.enum(["all", "draft", "scheduled", "published"]).optional(),
+        status: z.enum(["all", "draft", "in_review", "scheduled", "published"]).optional(),
         locale: z.string().optional(),
         missingLocale: z
           .string()
@@ -456,7 +473,7 @@ api.openapi(
     tags: ["Posts"],
     summary: "Create a post",
     description:
-      "Creates a draft by default. Requires `posts:write` (and `posts:publish` with `publish: true`).",
+      "Creates a draft by default. Requires `posts:write` (and `posts:publish` with `publish: true`). With `submitForReview: true` — or `publish: true` from an integration that may not publish — the post waits for approval (`status: in_review`).",
     request: {
       headers: IdemHeader,
       body: { content: { "application/json": { schema: CreatePostBody } } },
@@ -467,7 +484,7 @@ api.openapi(
     const body = c.req.valid("json");
     return idempotent(c, body, async () => {
       const post = await createPost(ctx(c), { ...body, publishedAt: toDate(body.publishedAt) });
-      return { status: 201, body: serializePost(ws(c), post) };
+      return { status: 201, body: await serializePostWithQueue(ws(c), post) };
     });
   },
 );
@@ -590,6 +607,8 @@ api.openapi(
 
 const publishDescription =
   "Requires `posts:publish`. Integrations can only publish when the workspace enables “Integrations can publish” (Settings → API).";
+const reviewNote =
+  " When integrations may not publish, a draft is sent to the review queue instead: the response has `status: in_review`, `adminUrl` (where a human approves it) and `pendingReviewCount`.";
 
 api.openapi(
   createRoute({
@@ -597,7 +616,7 @@ api.openapi(
     path: "/posts/{id}/publish",
     tags: ["Posts"],
     summary: "Publish a post",
-    description: publishDescription,
+    description: publishDescription + reviewNote,
     request: {
       params: IdParam,
       headers: IdemHeader.merge(IfMatch),
@@ -620,7 +639,7 @@ api.openapi(
         expectedVersion: expectedVersionFrom(c.req.header("if-match")),
       });
       c.header("ETag", etagOf(post));
-      return { status: 200, body: serializePost(ws(c), post) };
+      return { status: 200, body: await serializePostWithQueue(ws(c), post) };
     });
   },
 );
@@ -631,7 +650,7 @@ api.openapi(
     path: "/posts/{id}/schedule",
     tags: ["Posts"],
     summary: "Schedule a post",
-    description: `Publishes at a future date. ${publishDescription}`,
+    description: `Publishes at a future date. ${publishDescription}${reviewNote}`,
     request: {
       params: IdParam,
       headers: IdemHeader.merge(IfMatch),
@@ -652,8 +671,62 @@ api.openapi(
         expectedVersion: expectedVersionFrom(c.req.header("if-match")),
       });
       c.header("ETag", etagOf(post));
-      return { status: 200, body: serializePost(ws(c), post) };
+      return { status: 200, body: await serializePostWithQueue(ws(c), post) };
     });
+  },
+);
+
+api.openapi(
+  createRoute({
+    method: "post",
+    path: "/posts/{id}/request-review",
+    tags: ["Posts"],
+    summary: "Send a draft to the review queue",
+    description:
+      "Leaves the draft waiting for a human to approve it in the dashboard (optionally with the date it should go out). Requires `posts:write`. The response includes `adminUrl` and `pendingReviewCount`.",
+    request: {
+      params: IdParam,
+      headers: IdemHeader.merge(IfMatch),
+      body: {
+        required: false,
+        content: {
+          "application/json": {
+            schema: z.object({ at: z.string().datetime({ offset: true }).optional() }),
+          },
+        },
+      },
+    },
+    responses: { 200: json(PostOut), ...errorResponses },
+  }),
+  async (c) => {
+    const body = (await c.req.json().catch(() => ({}))) as { at?: string };
+    return idempotent(c, body, async () => {
+      const post = await requestReview(ctx(c), c.req.valid("param").id, {
+        at: body.at ?? null,
+        expectedVersion: expectedVersionFrom(c.req.header("if-match")),
+      });
+      c.header("ETag", etagOf(post));
+      return { status: 200, body: await serializePostWithQueue(ws(c), post) };
+    });
+  },
+);
+
+api.openapi(
+  createRoute({
+    method: "post",
+    path: "/posts/{id}/withdraw-review",
+    tags: ["Posts"],
+    summary: "Take a post out of the review queue",
+    description: "The post stays as a plain draft. Requires `posts:write`.",
+    request: { params: IdParam, headers: IfMatch },
+    responses: { 200: json(PostOut), ...errorResponses },
+  }),
+  async (c) => {
+    const post = await withdrawReview(ctx(c), c.req.valid("param").id, {
+      expectedVersion: expectedVersionFrom(c.req.header("if-match")),
+    });
+    c.header("ETag", etagOf(post));
+    return c.json(serializePost(ws(c), post), 200);
   },
 );
 

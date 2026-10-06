@@ -34,7 +34,13 @@ Reading the workspace, locales, categories, widget settings and members only nee
 
 ### Integrations can publish
 
-Each workspace has a switch, **Settings → API & MCP → Integrations can publish**. It is **off by default**. While it is off, API keys and MCP clients can only work with drafts. Publishing, scheduling, unpublishing, and editing or deleting a post that is already published or scheduled all return `403`. A person publishes from the dashboard. Turn it on to let keys with `posts:publish` go all the way. This setting can only be changed in the dashboard.
+Each workspace has a switch, **Settings → API & MCP → Integrations can publish**. It is **off by default**. While it is off, API keys and MCP clients work with drafts, and **publishing or scheduling sends the post to the review queue** instead: the response is `200` with `status: "in_review"`, and a person approves it from the dashboard (**Posts → Pending review**). Unpublishing, and editing or deleting a post that is already published or scheduled, return `403`.
+
+### Review queue
+
+A post waiting for approval has `status: "in_review"` and a `review` object (`requestedAt`, `requestedBy`). Every post has `adminUrl`, its page in the dashboard. Responses that leave a post in review also include `pendingReviewCount`, how many posts are waiting in the workspace. With these, a CI job or an agent can announce it, for example in Slack: *"New update to review: <adminUrl> (3 waiting)"*.
+
+Ways to send a post to review: `POST /posts` with `submitForReview: true` (or `publish: true` when integrations may not publish), `POST /posts/{id}/request-review` (optional `at`), or `publish`/`schedule` while publishing is off. `POST /posts/{id}/withdraw-review` takes it out of the queue. Approving is publishing from the dashboard: the requested date is kept if it is still in the future, otherwise it goes out right away. Turn it on to let keys with `posts:publish` go all the way. This setting can only be changed in the dashboard.
 
 ## Conventions
 
@@ -43,7 +49,7 @@ Each workspace has a switch, **Settings → API & MCP → Integrations can publi
 - JSON in and out (`Content-Type: application/json`). Dates are ISO 8601 strings, for example `2026-10-05T09:00:00Z`.
 - Endpoints that take `{id}` accept either the post `id` or its short `publicId`.
 - Posts carry a `translations` object keyed by locale (`en`, `es`…). Each translation has `title`, `slug`, `contentMd` ([Markdown](markdown.md)), `contentHtml`, `excerpt` and `url`. `url` is the public link once the post is published.
-- `status` is `draft`, `scheduled` (published with a future `publishedAt`) or `published`.
+- `status` is `draft`, `in_review` (waiting for approval, see [Review queue](#review-queue)), `scheduled` (published with a future `publishedAt`) or `published`.
 - A locale must be enabled in the workspace before you can write a translation for it (`GET /api/v1/locales`).
 
 ### Idempotency
@@ -81,7 +87,7 @@ Errors use [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) `application/probl
 | Status | `code` | When |
 | --- | --- | --- |
 | 401 | `unauthorized` | Missing, invalid, expired or revoked key. |
-| 403 | `forbidden` | Missing scope, or publishing disabled for integrations. |
+| 403 | `forbidden` | Missing scope, or a change to a live post while publishing is disabled for integrations. |
 | 404 | `not_found` | Unknown post, category or endpoint. |
 | 409 | `conflict` | Conflicting state. |
 | 412 | `precondition_failed` | `If-Match` doesn't match the current version. `details.currentVersion` has the current one. |
@@ -116,6 +122,8 @@ The API allows any origin, but **never put an API key in browser code**. For pub
 | DELETE | `/posts/{id}/translations/{locale}` | `posts:write` | Remove one translation. |
 | POST | `/posts/{id}/publish` | `posts:publish` | Publish now, or at `at` (body is optional). |
 | POST | `/posts/{id}/schedule` | `posts:publish` | Publish at a future `publishAt`. |
+| POST | `/posts/{id}/request-review` | `posts:write` | Send a draft to the review queue (optional `at`). |
+| POST | `/posts/{id}/withdraw-review` | `posts:write` | Take it out of the review queue. |
 | POST | `/posts/{id}/unpublish` | `posts:publish` | Back to draft. |
 | POST | `/preview` | — | Render Markdown exactly like the public page. |
 | GET | `/categories` | — | List categories. |

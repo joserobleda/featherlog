@@ -2,6 +2,7 @@ import {
   type Actor,
   AppError,
   type Ctx,
+  countPendingReview,
   createCategory,
   createPost,
   deletePost,
@@ -14,6 +15,7 @@ import {
   listPosts,
   listUserWorkspaces,
   publishPost,
+  requestReview,
   type Scope,
   schedulePost,
   setTranslation,
@@ -28,7 +30,12 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { storeImage } from "@/lib/images";
-import { serializeCategory, serializePost, serializeWorkspace } from "../api/serializers";
+import {
+  serializeCategory,
+  serializePost,
+  serializePostWithQueue,
+  serializeWorkspace,
+} from "../api/serializers";
 import { fetchPublicUrl } from "../api/ssrf";
 
 /** Who is calling the MCP endpoint. */
@@ -40,7 +47,7 @@ const INSTRUCTIONS = `Featherlog is a changelog: you write product updates ("pos
 
 - Posts have one translation per language (\`translations: { en: { title, contentMd }, es: {...} }\`). Use \`get_workspace\` to see enabled languages and categories.
 - Write content in Markdown. Label a post with categories by adding a paragraph with the category name in brackets, e.g. \`[New]\` or \`[Fix] [Improvement]\` (names in that translation's language). Read the \`featherlog://guide/markdown\` resource for all syntax (video embeds, image sizing).
-- New posts are drafts. Publishing (\`publish_post\`/\`schedule_post\`) may be disabled for integrations by the workspace — then leave a draft and tell the user to review and publish it from the dashboard.
+- New posts are drafts. Publishing (\`publish_post\`/\`schedule_post\`) may be disabled for integrations by the workspace. Then the post goes to the **review queue** instead (\`status: "in_review"\`): a human approves it from the dashboard. The response includes \`adminUrl\` (link to review it) and \`pendingReviewCount\` (posts waiting in total) — share both when you tell the team (e.g. in Slack) that there is a new update to review. You can also send a draft to review explicitly with \`request_review\`, and list the queue with \`list_posts\` and \`status: "in_review"\`.
 - Prefer updating an existing draft over creating duplicates. Pass \`expectedVersion\` from the last read to avoid overwriting human edits.`;
 
 function ok(data: unknown) {
@@ -182,10 +189,11 @@ export function buildMcpServer(principal: McpPrincipal) {
     "list_posts",
     {
       title: "List posts",
-      description: "Posts, newest first. Filter by status, language or text.",
+      description:
+        'Posts, newest first. Filter by status, language or text. `status: "in_review"` lists the review queue. Also returns `pendingReviewCount`.',
       inputSchema: z.object({
         workspace: workspaceArg,
-        status: z.enum(["all", "draft", "scheduled", "published"]).optional(),
+        status: z.enum(["all", "draft", "in_review", "scheduled", "published"]).optional(),
         locale: z.string().optional(),
         missingLocale: z
           .string()
@@ -204,6 +212,7 @@ export function buildMcpServer(principal: McpPrincipal) {
         return {
           items: page.items.map((p) => serializePost(r.workspace, p)),
           nextCursor: page.nextCursor,
+          pendingReviewCount: await countPendingReview(db, r.workspace.id),
         };
       }),
   );
@@ -232,7 +241,7 @@ export function buildMcpServer(principal: McpPrincipal) {
     {
       title: "Create post",
       description:
-        "Creates a post as a draft. Add one translation per language you want to publish in.",
+        "Creates a post as a draft. Add one translation per language you want to publish in. With `submitForReview: true` it goes straight to the review queue.",
       inputSchema: z.object({
         workspace: workspaceArg,
         translations: translationsArg,
@@ -241,18 +250,23 @@ export function buildMcpServer(principal: McpPrincipal) {
           .datetime({ offset: true })
           .optional()
           .describe("Planned publication date (ISO 8601)"),
+        submitForReview: z
+          .boolean()
+          .optional()
+          .describe("Send it to the review queue for a human to approve and publish"),
       }),
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
     },
-    async ({ workspace, translations, publishedAt }) =>
+    async ({ workspace, translations, publishedAt, submitForReview }) =>
       guarded(async () => {
         const r = await resolve(workspace);
         const post = await createPost(r.ctx, {
           translations,
           publishedAt: publishedAt ? new Date(publishedAt) : null,
           publish: false,
+          submitForReview: submitForReview ?? false,
         });
-        return serializePost(r.workspace, post);
+        return serializePostWithQueue(r.workspace, post);
       }),
   );
 
@@ -335,7 +349,7 @@ export function buildMcpServer(principal: McpPrincipal) {
     {
       title: "Publish post",
       description:
-        "Publishes a post (at its planned publication date if one is set, otherwise now). Use schedule_post for a specific future date. May be disabled for integrations by the workspace owner — if so, ask the user to publish it from the dashboard.",
+        "Publishes a post (at its planned publication date if one is set, otherwise now). Use schedule_post for a specific future date. If integrations may not publish in this workspace, the post goes to the review queue instead (`status: in_review`, with `adminUrl` and `pendingReviewCount`).",
       inputSchema: z.object({
         workspace: workspaceArg,
         id: z.string(),
@@ -351,7 +365,10 @@ export function buildMcpServer(principal: McpPrincipal) {
     async ({ workspace, id, expectedVersion }) =>
       guarded(async () => {
         const r = await resolve(workspace);
-        return serializePost(r.workspace, await publishPost(r.ctx, id, { expectedVersion }));
+        return serializePostWithQueue(
+          r.workspace,
+          await publishPost(r.ctx, id, { expectedVersion }),
+        );
       }),
   );
 
@@ -359,7 +376,8 @@ export function buildMcpServer(principal: McpPrincipal) {
     "schedule_post",
     {
       title: "Schedule post",
-      description: "Schedules a post to go live at a future date.",
+      description:
+        "Schedules a post to go live at a future date. If integrations may not publish, it goes to the review queue with that date instead.",
       inputSchema: z.object({
         workspace: workspaceArg,
         id: z.string(),
@@ -371,9 +389,37 @@ export function buildMcpServer(principal: McpPrincipal) {
     async ({ workspace, id, publishAt, expectedVersion }) =>
       guarded(async () => {
         const r = await resolve(workspace);
-        return serializePost(
+        return serializePostWithQueue(
           r.workspace,
           await schedulePost(r.ctx, id, publishAt, { expectedVersion }),
+        );
+      }),
+  );
+
+  server.registerTool(
+    "request_review",
+    {
+      title: "Send to review",
+      description:
+        "Sends a draft to the review queue so a human approves and publishes it from the dashboard. Returns `adminUrl` (link to review it) and `pendingReviewCount` (posts waiting in total).",
+      inputSchema: z.object({
+        workspace: workspaceArg,
+        id: z.string(),
+        publishAt: z
+          .string()
+          .datetime({ offset: true })
+          .optional()
+          .describe("When it should go out once approved (default: as soon as it is approved)"),
+        expectedVersion: z.number().int().optional(),
+      }),
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    },
+    async ({ workspace, id, publishAt, expectedVersion }) =>
+      guarded(async () => {
+        const r = await resolve(workspace);
+        return serializePostWithQueue(
+          r.workspace,
+          await requestReview(r.ctx, id, { at: publishAt ?? null, expectedVersion }),
         );
       }),
   );

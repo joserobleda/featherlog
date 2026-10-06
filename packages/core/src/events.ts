@@ -6,6 +6,8 @@ export type DomainEvent =
   | "post.published"
   | "post.unpublished"
   | "post.deleted"
+  | "post.review_requested"
+  | "post.review_withdrawn"
   | "workspace.updated";
 
 /** Appends an event to the outbox, in the caller's transaction. */

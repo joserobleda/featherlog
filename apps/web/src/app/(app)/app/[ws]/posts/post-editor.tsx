@@ -33,7 +33,12 @@ import { Dropdown, DropdownContent, DropdownItem, DropdownTrigger } from "@/comp
 import { Select } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
-import { deletePostAction, type SavePostInput, savePostAction } from "./actions";
+import {
+  deletePostAction,
+  type SavePostInput,
+  savePostAction,
+  withdrawReviewAction,
+} from "./actions";
 
 type Translation = { title: string; contentMd: string };
 
@@ -61,6 +66,8 @@ export type EditorProps = {
     createdVia?: string;
     actorLabel?: string | null;
     slugs?: Record<string, string>;
+    /** Set while the post waits for approval (sent by an integration). */
+    review?: { requestedAt: string; requestedBy: string | null } | null;
   };
 };
 
@@ -98,6 +105,7 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
   const [publishedAt, setPublishedAt] = useState<string | null>(initial.publishedAt);
   const [published, setPublished] = useState(initial.published);
   const [authorId, setAuthorId] = useState<string | null>(initial.authorId);
+  const [review, setReview] = useState(initial.review ?? null);
   const [conflict, setConflict] = useState(false);
   const [pending, startTransition] = useTransition();
   const [autosaveState, setAutosaveState] = useState<"idle" | "saving" | "saved">("idle");
@@ -200,6 +208,7 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
       setSlugs(p.slugs);
       setPublished(p.published);
       setPublishedAt(p.publishedAt);
+      setReview(p.review);
       setExisting(new Set(Object.keys(p.slugs)));
       setSavedSnapshot(JSON.stringify({ ...JSON.parse(snap), publishedAt: p.publishedAt }));
       // Autosaves keep the URL (changing it would remount the editor mid-typing).
@@ -306,7 +315,29 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
       ? `${workspace.publicBase}/${workspace.slug}${locale === workspace.defaultLocale ? "" : `/${locale}`}/${slugs[locale]}-${publicId}`
       : null;
 
-  const status = !published ? "draft" : isFuture ? "scheduled" : "published";
+  const inReview = !published && review !== null;
+  const status = !published
+    ? inReview
+      ? "in_review"
+      : "draft"
+    : isFuture
+      ? "scheduled"
+      : "published";
+
+  const returnToDraft = () =>
+    startTransition(async () => {
+      if (!postId) return;
+      if (dirty && !(await save(false))) return;
+      const res = await withdrawReviewAction(workspace.slug, postId);
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
+      setReview(null);
+      setVersion(res.data.version);
+      toast.success(t("review.returned"));
+      router.refresh();
+    });
 
   /* ---------- render ---------- */
   const toolbar = [
@@ -348,7 +379,15 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
           </Link>
         </Button>
         <Badge
-          tone={status === "published" ? "success" : status === "scheduled" ? "warning" : "neutral"}
+          tone={
+            status === "published"
+              ? "success"
+              : status === "in_review"
+                ? "warning"
+                : status === "scheduled"
+                  ? "brand"
+                  : "neutral"
+          }
         >
           {tStatus(status)}
         </Badge>
@@ -394,6 +433,48 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
           </div>
         </div>
       </header>
+
+      {inReview && review ? (
+        <div
+          className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-amber-500/20 bg-amber-500/10 px-4 py-2.5 text-sm text-amber-900 dark:text-amber-200"
+          role="status"
+        >
+          <span className="min-w-0 flex-1">
+            <strong className="font-semibold">
+              {t("review.title", { by: review.requestedBy ?? tVia(initial.createdVia as "api") })}
+            </strong>{" "}
+            {t("review.when", {
+              date: format.dateTime(new Date(review.requestedAt), {
+                dateStyle: "medium",
+                timeStyle: "short",
+              }),
+            })}
+            {" · "}
+            {isFuture && publishedAt
+              ? t("review.goesOutAt", {
+                  date: format.dateTime(new Date(publishedAt), {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  }),
+                })
+              : t("review.goesOutNow")}
+          </span>
+          {canPublish ? (
+            <span className="flex gap-2">
+              <Button size="sm" variant="secondary" onClick={returnToDraft} loading={pending}>
+                {t("review.returnToDraft")}
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => runSave(true, t("review.approved"))}
+                loading={pending}
+              >
+                {isFuture ? t("review.approveSchedule") : t("review.approve")}
+              </Button>
+            </span>
+          ) : null}
+        </div>
+      ) : null}
 
       {conflict ? (
         <div
@@ -684,8 +765,17 @@ export function PostEditor({ workspace, categories, members, canPublish, initial
                       {t("saveDraft")}
                     </Button>
                     {canPublish ? (
-                      <Button onClick={() => runSave(true, t("saved"))} loading={pending}>
-                        {isFuture ? t("schedule") : t("publish")}
+                      <Button
+                        onClick={() => runSave(true, inReview ? t("review.approved") : t("saved"))}
+                        loading={pending}
+                      >
+                        {inReview
+                          ? isFuture
+                            ? t("review.approveSchedule")
+                            : t("review.approve")
+                          : isFuture
+                            ? t("schedule")
+                            : t("publish")}
                       </Button>
                     ) : null}
                   </>

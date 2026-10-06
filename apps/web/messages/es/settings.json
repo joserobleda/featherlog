@@ -238,7 +238,7 @@
     "description": "Deja que tus scripts, tu CI y tus agentes de IA lean y publiquen novedades.",
     "publishing": {
       "title": "Las integraciones pueden publicar",
-      "description": "Desactivado (recomendado), la API y el MCP solo crean y editan borradores y una persona los publica desde el panel. Activado, las claves con permiso de publicar y las apps MCP autorizadas pueden publicar, programar y editar entradas publicadas."
+      "description": "Desactivado (recomendado), la API y el MCP crean y editan borradores, y lo que intenten publicar queda pendiente de revisión (Entradas → Pendientes) hasta que una persona lo apruebe. Activado, las claves con permiso de publicar y las apps MCP autorizadas pueden publicar, programar y editar entradas publicadas."
     },
     "keys": {
       "title": "Claves de API",

@@ -238,7 +238,7 @@
     "description": "Let your scripts, CI and AI agents read and publish updates.",
     "publishing": {
       "title": "Integrations can publish",
-      "description": "When off (recommended), the API and MCP can only create and edit drafts — a person publishes from the dashboard. When on, keys with the publish scope and authorized MCP apps can publish, schedule and edit live posts."
+      "description": "When off (recommended), the API and MCP create and edit drafts, and when they publish the post goes to the review queue (Posts → Pending review) for a person to approve. When on, keys with the publish scope and authorized MCP apps can publish, schedule and edit live posts."
     },
     "keys": {
       "title": "API keys",

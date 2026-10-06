@@ -13,7 +13,8 @@
     "viewPublic": "View public page",
     "newWorkspace": "New workspace",
     "workspaces": "Workspaces",
-    "docs": "Documentation"
+    "docs": "Documentation",
+    "pendingReview": "{count, plural, one {# post waiting for review} other {# posts waiting for review}}"
   },
   "onboarding": {
     "title": "Create your workspace",

@@ -38,6 +38,12 @@ export default async function EditPostPage({
         authorId: post.author?.id ?? null,
         createdVia: post.createdVia,
         actorLabel: post.actorLabel,
+        review: post.review
+          ? {
+              requestedAt: post.review.requestedAt.toISOString(),
+              requestedBy: post.review.requestedBy,
+            }
+          : null,
       }}
     />
   );

@@ -124,11 +124,12 @@ It requires Node.js 20 or newer. Set `FEATHERLOG_DEBUG=1` to log protocol errors
 | `get_workspace` | Settings, enabled languages, categories (names per language) and `canPublish`. Agents should call this before writing. |
 | `list_posts` | Posts, newest first. Filter by `status`, `locale`, `missingLocale` (not yet translated), `q` (text search). Paginated with `cursor`. |
 | `get_post` | A post with all its translations and its `version`. |
-| `create_post` | Creates a **draft** with one translation per language. Takes an optional planned `publishedAt`. |
+| `create_post` | Creates a **draft** with one translation per language. Takes an optional planned `publishedAt`, and `submitForReview` to send it straight to the review queue. |
 | `update_post` | Partial update of translations (set a locale to `null` to remove it) or `publishedAt`. |
 | `set_translation` | Creates or replaces one language's title and content. |
-| `publish_post` | Publishes now. |
-| `schedule_post` | Publishes at a future date. |
+| `publish_post` | Publishes now — or, if integrations may not publish, sends it to the review queue. |
+| `schedule_post` | Publishes at a future date — or sends it to review with that date. |
+| `request_review` | Sends a draft to the review queue (optional `publishAt`). Returns `adminUrl` and `pendingReviewCount`. |
 | `unpublish_post` | Turns a published or scheduled post back into a draft. |
 | `delete_post` | Deletes a post. The tool tells the agent to confirm with the user first. |
 | `preview_markdown` | Renders Markdown exactly like the public page, to check categories and embeds. |
@@ -157,7 +158,8 @@ Write tools accept `expectedVersion`, the `version` from the last read. If someo
 ## Safety model
 
 - **Drafts by default.** `create_post` always creates a draft. Publishing is a separate tool call.
-- **Publishing is opt-in per workspace.** While **Settings → API & MCP → Integrations can publish** is off (the default), agents can't publish, schedule, unpublish, or edit or delete a live post. They leave a draft and tell you to review it in the dashboard.
+- **Publishing is opt-in per workspace.** While **Settings → API & MCP → Integrations can publish** is off (the default), agents can't unpublish, or edit or delete a live post, and when they publish or schedule, the post goes to the **review queue** (`status: "in_review"`). A person approves it from **Posts → Pending review** in the dashboard; the sidebar shows how many are waiting.
+- **Announcing reviews.** Publishing responses for posts in review include `adminUrl` (the post in the dashboard) and `pendingReviewCount`. An agent such as Cursor can post them to Slack ("New product update to review: … — 3 waiting") with its own Slack tools; `list_posts` with `status: "in_review"` lists the whole queue.
 - **Scopes and roles.** API keys only get the scopes you pick. OAuth sessions are limited to the intersection of the granted scopes and your role.
 - **No silent overwrites.** `expectedVersion` protects human edits. Every post records whether it was created in the panel, by the API or by MCP, and by which key or app.
 - **Revocation.** Revoke API keys in **Settings → API & MCP → API keys**. Disconnect OAuth apps in **Settings → API & MCP → Authorized apps**: this removes the consent and revokes refresh tokens immediately. Access tokens already issued expire within the hour.

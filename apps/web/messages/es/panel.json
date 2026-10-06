@@ -13,7 +13,8 @@
     "viewPublic": "Ver página pública",
     "newWorkspace": "Nuevo espacio",
     "workspaces": "Espacios",
-    "docs": "Documentación"
+    "docs": "Documentación",
+    "pendingReview": "{count, plural, one {# entrada pendiente de revisión} other {# entradas pendientes de revisión}}"
   },
   "onboarding": {
     "title": "Crea tu espacio",
