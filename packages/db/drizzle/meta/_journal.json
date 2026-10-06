@@ -22,6 +22,13 @@
       "when": 1791231630988,
       "tag": "0002_post_imports",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1791271751521,
+      "tag": "0003_widget_layout",
+      "breakpoints": true
     }
   ]
 }

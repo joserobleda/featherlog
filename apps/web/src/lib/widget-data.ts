@@ -50,6 +50,8 @@ export async function buildFrameData(
       badgeDelay: settings.badgeDelay,
       softHide: settings.softHide,
       eyecatcher: settings.eyecatcher as FrameData["settings"]["eyecatcher"],
+      metaPosition: settings.metaPosition === "below" ? "below" : "above",
+      stickyFooter: settings.stickyFooter,
       expireAfterDays: settings.expireAfterDays,
       whitelabel: ws.whitelabel,
     },

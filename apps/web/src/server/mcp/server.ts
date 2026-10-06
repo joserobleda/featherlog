@@ -540,6 +540,8 @@ export function buildMcpServer(principal: McpPrincipal) {
           expireAfterDays: w.expireAfterDays,
           softHide: w.softHide,
           eyecatcher: w.eyecatcher,
+          metaPosition: w.metaPosition,
+          stickyFooter: w.stickyFooter,
           uiStrings: w.uiStrings,
           snippet: `<script>\n  var HW_config = { selector: ".featherlog-badge", account: "${r.workspace.publicId}" };\n</script>\n<script async src="${env.WIDGET_URL}/widget.js"></script>`,
         };
@@ -550,7 +552,8 @@ export function buildMcpServer(principal: McpPrincipal) {
     "update_widget_settings",
     {
       title: "Update widget settings",
-      description: "Changes widget behaviour (badge delay, entries shown, eyecatcher…).",
+      description:
+        "Changes widget behaviour and layout (badge delay, entries shown, eyecatcher, meta position, sticky footer…).",
       inputSchema: z.object({
         workspace: workspaceArg,
         accentColor: z
@@ -563,6 +566,14 @@ export function buildMcpServer(principal: McpPrincipal) {
         expireAfterDays: z.number().int().min(1).max(365).nullable().optional(),
         softHide: z.boolean().optional(),
         eyecatcher: z.enum(["off", "on", "progressive"]).optional(),
+        metaPosition: z
+          .enum(["above", "below"])
+          .optional()
+          .describe("Category chips and date above or below the title"),
+        stickyFooter: z
+          .boolean()
+          .optional()
+          .describe("Keep the 'see all updates' footer always visible"),
       }),
       annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
     },

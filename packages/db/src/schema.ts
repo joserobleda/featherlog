@@ -270,6 +270,10 @@ export const widgetSettings = pgTable("widget_settings", {
   expireAfterDays: integer("expire_after_days"),
   softHide: boolean("soft_hide").notNull().default(true),
   eyecatcher: text("eyecatcher").notNull().default("on"),
+  /** Category chips and date: `above` or `below` the title in the list. */
+  metaPosition: text("meta_position").notNull().default("above"),
+  /** Keep the footer ("See all updates") pinned to the bottom instead of after the list. */
+  stickyFooter: boolean("sticky_footer").notNull().default(false),
   /** Per-locale overrides of the widget UI strings: { es: { title: "..." } } */
   uiStrings: jsonb("ui_strings")
     .$type<Record<string, Record<string, string>>>()

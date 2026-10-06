@@ -102,6 +102,21 @@ describe("frame list view", () => {
     expect(q(".fl-powered")).toBeNull();
   });
 
+  it("puts category and date above the title by default, below when configured", () => {
+    mount();
+    const first = () => q(".fl-item");
+    expect(first().firstElementChild?.classList.contains("fl-meta")).toBe(true);
+    expect(root.classList.contains("fl-sticky-footer")).toBe(false);
+    app?.destroy();
+    const data = frameData();
+    data.settings.metaPosition = "below";
+    data.settings.stickyFooter = true;
+    mount(data);
+    const kids = Array.from(first().children).map((c) => c.className);
+    expect(kids.slice(0, 2)).toEqual(["fl-item-title", "fl-meta fl-meta-below"]);
+    expect(root.classList.contains("fl-sticky-footer")).toBe(true);
+  });
+
   it("shows the empty state", () => {
     mount(frameData({ items: [] }));
     expect(q(".fl-empty").textContent).toBe("Nothing here yet");

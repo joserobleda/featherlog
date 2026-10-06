@@ -128,6 +128,9 @@ button {
   gap: 6px;
   margin-bottom: 4px;
 }
+.fl-meta-below {
+  margin: 4px 0 2px;
+}
 .fl-chip,
 .fl-new {
   padding: 1px 7px;
@@ -170,6 +173,11 @@ button {
   padding: 10px 16px;
   border-top: 1px solid var(--fl-border);
   font-size: 12px;
+}
+.fl-sticky-footer .fl-footer {
+  position: sticky;
+  bottom: 0;
+  background: var(--fl-bg);
 }
 .fl-footer a {
   text-decoration: none;

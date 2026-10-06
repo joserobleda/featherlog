@@ -13,6 +13,10 @@ export type FrameSettings = {
   badgeDelay: number /* seconds */;
   softHide: boolean;
   eyecatcher: "off" | "on" | "progressive";
+  /** Category chips and date above or below the title in the list (default above). */
+  metaPosition?: "above" | "below";
+  /** Footer pinned to the bottom of the popover instead of after the list. */
+  stickyFooter?: boolean;
   expireAfterDays: number | null;
   whitelabel: boolean;
 };

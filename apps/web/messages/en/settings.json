@@ -125,7 +125,15 @@
       "back": "Back button",
       "empty": "Empty state",
       "newBadge": "“New” label"
-    }
+    },
+    "layout": "Layout",
+    "metaPosition": "Category and date",
+    "metaPositions": {
+      "above": "Above the title",
+      "below": "Below the title"
+    },
+    "stickyFooter": "Always show “See all updates”",
+    "stickyFooterDescription": "Pin the link to the bottom of the widget. When off, it appears after the last entry."
   },
   "categories": {
     "title": "Categories",

@@ -15,6 +15,7 @@ const STRING_KEYS = ["title", "readMore", "footer", "back", "empty", "newBadge"]
 const DELAYS = [0, 1, 3, 6, 10, 30];
 const EXPIRY = [null, 3, 6, 10, 15, 30];
 const EYECATCHERS = ["off", "on", "progressive"] as const;
+const META_POSITIONS = ["above", "below"] as const;
 
 type LocaleOption = { code: string; label: string };
 
@@ -211,6 +212,44 @@ export function WidgetSettingsForm({
                 description={t("widget.softHideDescription")}
                 checked={values.softHide}
                 onCheckedChange={(v) => set("softHide", v)}
+              />
+            </div>
+
+            <fieldset className="grid gap-2 border-t border-border pt-5">
+              <legend className="sr-only">{t("widget.layout")}</legend>
+              <p className="mb-1.5 text-sm font-medium" aria-hidden="true">
+                {t("widget.metaPosition")}
+              </p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {META_POSITIONS.map((pos) => (
+                  <label
+                    key={pos}
+                    className={cn(
+                      "flex cursor-pointer items-center gap-2 rounded-lg border border-border px-3 py-2.5 text-sm font-medium transition-colors hover:bg-muted/60 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand/40",
+                      values.metaPosition === pos && "border-brand bg-brand/5",
+                    )}
+                  >
+                    <input
+                      type="radio"
+                      name="meta-position"
+                      value={pos}
+                      checked={values.metaPosition === pos}
+                      onChange={() => set("metaPosition", pos)}
+                      className="accent-[var(--color-brand)]"
+                    />
+                    {t(`widget.metaPositions.${pos}`)}
+                  </label>
+                ))}
+              </div>
+            </fieldset>
+
+            <div className="border-t border-border">
+              <SwitchRow
+                id="sticky-footer"
+                label={t("widget.stickyFooter")}
+                description={t("widget.stickyFooterDescription")}
+                checked={values.stickyFooter}
+                onCheckedChange={(v) => set("stickyFooter", v)}
               />
             </div>
           </CardBody>

@@ -125,7 +125,15 @@
       "back": "Botón de volver",
       "empty": "Sin publicaciones",
       "newBadge": "Etiqueta «Nuevo»"
-    }
+    },
+    "layout": "Diseño",
+    "metaPosition": "Categoría y fecha",
+    "metaPositions": {
+      "above": "Encima del título",
+      "below": "Debajo del título"
+    },
+    "stickyFooter": "Mostrar siempre «Ver todas las novedades»",
+    "stickyFooterDescription": "Fija el enlace en la parte inferior del widget. Si está desactivado, aparece después de la última entrada."
   },
   "categories": {
     "title": "Categorías",

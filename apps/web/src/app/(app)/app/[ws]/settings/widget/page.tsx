@@ -97,6 +97,8 @@ useEffect(() => {
             expireAfterDays: settings.expireAfterDays,
             softHide: settings.softHide,
             eyecatcher: settings.eyecatcher as "off" | "on" | "progressive",
+            metaPosition: settings.metaPosition === "below" ? "below" : "above",
+            stickyFooter: settings.stickyFooter,
             uiStrings: settings.uiStrings ?? {},
           }}
         />

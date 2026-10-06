@@ -11,6 +11,8 @@ export type WidgetFormInput = {
   expireAfterDays: number | null;
   softHide: boolean;
   eyecatcher: "off" | "on" | "progressive";
+  metaPosition: "above" | "below";
+  stickyFooter: boolean;
   uiStrings: Record<string, Record<string, string>>;
 };
 
@@ -38,6 +40,8 @@ export async function updateWidgetAction(wsSlug: string, input: WidgetFormInput)
       expireAfterDays: input.expireAfterDays,
       softHide: input.softHide,
       eyecatcher: input.eyecatcher,
+      metaPosition: input.metaPosition,
+      stickyFooter: input.stickyFooter,
       uiStrings,
     });
     revalidatePath(`/app/${workspace.slug}/settings/widget`);

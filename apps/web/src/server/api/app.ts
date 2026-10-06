@@ -863,6 +863,8 @@ const WidgetSettingsOut = z
     expireAfterDays: z.number().nullable(),
     softHide: z.boolean(),
     eyecatcher: z.enum(["off", "on", "progressive"]),
+    metaPosition: z.enum(["above", "below"]),
+    stickyFooter: z.boolean(),
     uiStrings: z.record(z.string(), z.record(z.string(), z.string())),
     snippet: z.string(),
   })
@@ -876,6 +878,8 @@ function widgetOut(w: Awaited<ReturnType<typeof getWidgetSettings>>, publicId: s
     expireAfterDays: w.expireAfterDays,
     softHide: w.softHide,
     eyecatcher: w.eyecatcher as "off" | "on" | "progressive",
+    metaPosition: w.metaPosition as "above" | "below",
+    stickyFooter: w.stickyFooter,
     uiStrings: w.uiStrings,
     snippet: `<script>\n  var HW_config = { selector: ".featherlog-badge", account: "${publicId}" };\n</script>\n<script async src="${env.WIDGET_URL}/widget.js"></script>`,
   };
@@ -910,6 +914,8 @@ api.openapi(
                 expireAfterDays: z.number().int().nullable(),
                 softHide: z.boolean(),
                 eyecatcher: z.enum(["off", "on", "progressive"]),
+                metaPosition: z.enum(["above", "below"]),
+                stickyFooter: z.boolean(),
                 uiStrings: z.record(z.string(), z.record(z.string(), z.string())),
               })
               .partial()

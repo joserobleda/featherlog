@@ -26,6 +26,8 @@ export const UpdateWidgetSettingsInput = z
     expireAfterDays: z.number().int().min(1).max(365).nullable(),
     softHide: z.boolean(),
     eyecatcher: z.enum(["off", "on", "progressive"]),
+    metaPosition: z.enum(["above", "below"]),
+    stickyFooter: z.boolean(),
     uiStrings: z
       .record(z.string(), z.partialRecord(z.enum(WIDGET_STRING_KEYS), z.string().max(120)))
       .refine((r) => Object.keys(r).every(isLocale), "Unsupported locale"),

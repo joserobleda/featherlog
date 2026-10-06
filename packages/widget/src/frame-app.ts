@@ -106,7 +106,7 @@ export function mountFrame(root: HTMLElement, data: FrameData, opts: FrameOption
   const renderList = (focusId?: string) => {
     detail = null;
     root.textContent = "";
-    root.className = "fl-list-view";
+    root.className = `fl-list-view${data.settings.stickyFooter ? " fl-sticky-footer" : ""}`;
     root.appendChild(header(h("h1", "fl-title", strings.title)));
     const main = h("main", "fl-main");
     const fresh = seen
@@ -126,11 +126,13 @@ export function mountFrame(root: HTMLElement, data: FrameData, opts: FrameOption
           openDetail(item, i),
         );
         b.dataset.id = item.id;
-        b.append(
-          meta(item, fresh.has(item.id)),
-          h("span", "fl-item-title", item.title),
-          h("span", "fl-excerpt", item.excerpt),
-        );
+        const title = h("span", "fl-item-title", item.title);
+        const m = meta(item, fresh.has(item.id));
+        if (data.settings.metaPosition === "below") {
+          m.classList.add("fl-meta-below");
+          b.append(title, m);
+        } else b.append(m, title);
+        b.append(h("span", "fl-excerpt", item.excerpt));
         li.appendChild(b);
         ul.appendChild(li);
         if (item.id === focusId) toFocus = b;
