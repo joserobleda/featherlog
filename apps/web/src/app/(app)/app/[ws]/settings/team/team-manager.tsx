@@ -1,6 +1,6 @@
 "use client";
 import type { Role } from "@featherlog/core/client";
-import { Crown, LogOut, Mail, RotateCw, Send, UserMinus, X } from "lucide-react";
+import { Crown, KeyRound, LogOut, Mail, RotateCw, Send, UserMinus, X } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -11,6 +11,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardBody, CardHeader } from "@/components/ui/card";
+import { Dialog, DialogClose, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import { Field, Input, Select } from "@/components/ui/input";
 import {
   changeRoleAction,
@@ -18,6 +19,7 @@ import {
   leaveWorkspaceAction,
   removeMemberAction,
   resendInvitationAction,
+  resetPasswordLinkAction,
   revokeInvitationAction,
   transferOwnershipAction,
 } from "./actions";
@@ -256,6 +258,7 @@ function MemberItem({
             }}
           />
         ) : null}
+        {canEdit ? <ResetPasswordDialog wsSlug={wsSlug} member={m} name={displayName} /> : null}
         {canEdit ? (
           <ConfirmDialog
             trigger={
@@ -403,5 +406,75 @@ function RolesExplainer() {
         ))}
       </CardBody>
     </Card>
+  );
+}
+
+/** Generates a one-time password reset link to share by hand (works without SMTP). */
+function ResetPasswordDialog({
+  wsSlug,
+  member: m,
+  name,
+}: {
+  wsSlug: string;
+  member: MemberRow;
+  name: string;
+}) {
+  const t = useTranslations("settings.team");
+  const tc = useTranslations("common");
+  const [url, setUrl] = useState<string | null>(null);
+  const [pending, start] = useTransition();
+  return (
+    <Dialog onOpenChange={(open) => !open && setUrl(null)}>
+      <DialogTrigger asChild>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="size-8 text-fg-muted"
+          aria-label={t("resetPassword")}
+          title={t("resetPassword")}
+        >
+          <KeyRound />
+        </Button>
+      </DialogTrigger>
+      <DialogContent
+        title={t("resetPasswordTitle", { name })}
+        description={url ? t("resetLinkShare", { email: m.email }) : t("resetPasswordDescription")}
+      >
+        {url ? (
+          <div className="grid gap-4">
+            <CopyField value={url} aria-label={t("resetLink")} />
+            <div className="flex justify-end">
+              <DialogClose asChild>
+                <Button type="button" variant="secondary">
+                  {tc("close")}
+                </Button>
+              </DialogClose>
+            </div>
+          </div>
+        ) : (
+          <div className="flex justify-end gap-2">
+            <DialogClose asChild>
+              <Button type="button" variant="secondary" disabled={pending}>
+                {tc("cancel")}
+              </Button>
+            </DialogClose>
+            <Button
+              type="button"
+              loading={pending}
+              onClick={() =>
+                start(async () => {
+                  const res = await resetPasswordLinkAction(wsSlug, m.userId);
+                  if (res.ok) setUrl(res.data.url);
+                  else toast.error(res.error);
+                })
+              }
+            >
+              {t("resetPasswordConfirm")}
+            </Button>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }

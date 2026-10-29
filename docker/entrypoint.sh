@@ -17,6 +17,11 @@ case "${1:-web}" in
     shift
     exec node /app/apps/web/create-api-key.mjs "$@"
     ;;
+  reset-password)
+    # docker compose exec app featherlog reset-password <email> [new-password]
+    shift
+    exec node /app/apps/web/reset-password.mjs "$@"
+    ;;
   *)
     exec "$@"
     ;;

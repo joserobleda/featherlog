@@ -36,6 +36,16 @@ backups/snapshots, or use `STORAGE_DRIVER=s3`.
 Redeploy in Coolify (it pulls the newest image for the tag), or enable automatic redeploys with the
 resource's webhook from the GitHub release workflow.
 
+## Resetting a forgotten password
+
+Without SMTP, users can't reset their password by email. An owner or admin can create a reset link for them in **Settings → Team** (the key icon next to the member). If nobody can sign in to do that, open the `app` container's **Terminal** and run:
+
+```sh
+featherlog reset-password <email> [new-password]
+```
+
+Without `new-password`, a random one is printed.
+
 ## Creating API keys from the terminal
 
 In Coolify, open the `app` container's **Terminal** and run:

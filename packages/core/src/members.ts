@@ -178,6 +178,33 @@ export async function changeMemberRole(ctx: Ctx, userId: string, role: Role) {
     .where(and(eq(memberships.workspaceId, ctx.workspaceId), eq(memberships.userId, userId)));
 }
 
+/**
+ * Checks that the actor may hand a password reset link to `userId`. A reset gives access to every
+ * workspace the user is in, so the actor must outrank them in all of them, not only this one.
+ */
+export async function assertMayResetPassword(ctx: Ctx, userId: string) {
+  assertCan(ctx, "members:admin");
+  const actorId = requireUser(ctx.actor);
+  if (actorId === userId) throw forbidden("Change your own password from your account");
+  await getMember(ctx.db, ctx.workspaceId, userId);
+  const rolesOf = async (id: string) =>
+    new Map(
+      (
+        await ctx.db
+          .select({ workspaceId: memberships.workspaceId, role: memberships.role })
+          .from(memberships)
+          .where(eq(memberships.userId, id))
+      ).map((m) => [m.workspaceId, m.role as Role]),
+    );
+  const [theirs, mine] = await Promise.all([rolesOf(userId), rolesOf(actorId)]);
+  for (const [workspaceId, role] of theirs) {
+    const myRole = mine.get(workspaceId);
+    if (myRole !== "owner" && (myRole !== "admin" || role === "owner")) {
+      throw forbidden("This member belongs to a workspace you don't manage");
+    }
+  }
+}
+
 export async function removeMember(ctx: Ctx, userId: string) {
   const self = ctx.actor.kind === "user" && ctx.actor.userId === userId;
   if (!self) assertCan(ctx, "members:admin");

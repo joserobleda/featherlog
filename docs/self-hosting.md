@@ -252,6 +252,18 @@ The dump includes `DROP … IF EXISTS` statements, so it restores over an existi
 curl -fsS https://changelog.example.com/healthz
 ```
 
+## Resetting a forgotten password
+
+With SMTP configured, users reset their own password from **Forgot password?** on the login page. Without SMTP that link is hidden; instead, an owner or admin opens **Settings → Team**, clicks the key icon next to the member and sends them the one-time link it creates (valid for 24 hours). Admins can't reset owners, and nobody can reset a member who also belongs to a workspace they don't manage.
+
+If nobody can sign in to do that (for example, the only owner forgot their password), reset it from the server:
+
+```sh
+docker compose exec app featherlog reset-password <email> [new-password]
+```
+
+Without `new-password`, a random one is generated and printed; send it to the user so they can sign in and change it in **Account**. The command also signs the user out of every session. It works for users who only signed in with Google or a magic link too (it adds a password login). From a repository checkout the same command is `pnpm --filter @featherlog/web reset-password <email> [new-password]` (it reads `apps/web/.env.local`).
+
 ## Creating API keys from the command line
 
 Keys are normally created in **Settings → API & MCP**. For automation, the Docker image ships a small CLI that creates one for a workspace and prints the secret (attributed to the workspace owner):

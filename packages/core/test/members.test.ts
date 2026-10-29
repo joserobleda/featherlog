@@ -1,8 +1,10 @@
+import { memberships } from "@featherlog/db";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createApiKey, listApiKeys, revokeApiKey, verifyApiKey } from "../src/apiKeys";
 import { withIdempotency } from "../src/idempotency";
 import {
   acceptInvitation,
+  assertMayResetPassword,
   changeMemberRole,
   findInvitation,
   inviteMember,
@@ -115,5 +117,51 @@ describe("idempotency", () => {
     await expect(
       withIdempotency(t.db, "p1", "k1", '{"a":2}', async () => ({ status: 201, body: {} })),
     ).rejects.toMatchObject({ code: "validation" });
+  });
+});
+
+describe("assertMayResetPassword", () => {
+  const join = (workspaceId: string, userId: string, role: "owner" | "admin" | "editor") =>
+    t.db.insert(memberships).values({ workspaceId, userId, role });
+
+  it("lets owners and admins reset members they outrank", async () => {
+    const f = await workspaceFixture(t.db);
+    const admin = await createUser(t.db, "Admin");
+    const editor = await createUser(t.db, "Editor");
+    await join(f.ws.id, admin, "admin");
+    await join(f.ws.id, editor, "editor");
+    await assertMayResetPassword(f.owner, editor);
+    await assertMayResetPassword(f.owner, admin);
+    await assertMayResetPassword(f.userCtx(admin, "admin"), editor);
+    await expect(
+      assertMayResetPassword(f.userCtx(admin, "admin"), f.ownerId),
+    ).rejects.toMatchObject({ code: "forbidden" });
+    await expect(assertMayResetPassword(f.userCtx(editor, "editor"), admin)).rejects.toMatchObject({
+      code: "forbidden",
+    });
+    await expect(assertMayResetPassword(f.owner, f.ownerId)).rejects.toMatchObject({
+      code: "forbidden",
+    });
+  });
+
+  it("refuses members of workspaces the actor doesn't manage", async () => {
+    const a = await workspaceFixture(t.db);
+    const b = await workspaceFixture(t.db);
+    const shared = await createUser(t.db, "Shared");
+    await join(a.ws.id, shared, "editor");
+    await join(b.ws.id, shared, "editor");
+    await expect(assertMayResetPassword(a.owner, shared)).rejects.toMatchObject({
+      code: "forbidden",
+    });
+    await join(b.ws.id, a.ownerId, "admin");
+    await assertMayResetPassword(a.owner, shared);
+  });
+
+  it("refuses users outside the workspace", async () => {
+    const f = await workspaceFixture(t.db);
+    const stranger = await createUser(t.db, "Stranger");
+    await expect(assertMayResetPassword(f.owner, stranger)).rejects.toMatchObject({
+      code: "not_found",
+    });
   });
 });

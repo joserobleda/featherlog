@@ -1,5 +1,6 @@
 "use server";
 import {
+  assertMayResetPassword,
   changeMemberRole,
   inviteMember,
   listInvitations,
@@ -8,9 +9,11 @@ import {
   revokeInvitation,
   transferOwnership,
 } from "@featherlog/core";
+import { generateRandomString } from "better-auth/crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { runAction } from "@/lib/actions";
+import { auth } from "@/lib/auth";
 import { invitationEmail } from "@/lib/emails";
 import { env } from "@/lib/env";
 import { sendMailSafe } from "@/lib/mailer";
@@ -84,6 +87,26 @@ export async function leaveWorkspaceAction(wsSlug: string) {
   const res = await runAction(() => removeMember(ctx, session.user.id));
   if (res.ok) redirect("/app");
   return res;
+}
+
+/** Shared by hand, so it lives longer than the 1-hour emailed link. */
+const RESET_LINK_TTL_MS = 24 * 60 * 60 * 1000;
+
+/** A one-time link for a member who forgot their password (works without SMTP). */
+export async function resetPasswordLinkAction(wsSlug: string, userId: string) {
+  const { ctx } = await getWorkspaceContext(wsSlug);
+  return runAction(async () => {
+    await assertMayResetPassword(ctx, userId);
+    // Same token format as better-auth's own reset flow, so /reset-password consumes it.
+    const token = generateRandomString(32, "a-z", "A-Z", "0-9");
+    const { internalAdapter } = await auth.$context;
+    await internalAdapter.createVerificationValue({
+      identifier: `reset-password:${token}`,
+      value: userId,
+      expiresAt: new Date(Date.now() + RESET_LINK_TTL_MS),
+    });
+    return { url: appUrl(`/reset-password?token=${token}`) };
+  });
 }
 
 export async function transferOwnershipAction(wsSlug: string, userId: string) {

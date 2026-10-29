@@ -231,7 +231,13 @@
     "inviteLinkEmailed": "We emailed this link to {email}. You can also share it directly:",
     "inviteLinkShare": "Email isn’t configured on this server — send this link to {email}:",
     "inviteLink": "Invitation link",
-    "linkCopied": "New invitation link for {email} copied to the clipboard"
+    "linkCopied": "New invitation link for {email} copied to the clipboard",
+    "resetPassword": "Reset password",
+    "resetPasswordTitle": "Reset {name}’s password?",
+    "resetPasswordDescription": "You’ll get a one-time link to send them. They choose a new password with it and are signed out everywhere. The link expires in 24 hours.",
+    "resetPasswordConfirm": "Create link",
+    "resetLinkShare": "Send this link to {email}. It works once and expires in 24 hours:",
+    "resetLink": "Password reset link"
   },
   "api": {
     "title": "API & MCP",

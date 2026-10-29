@@ -231,7 +231,13 @@
     "inviteLinkEmailed": "Hemos enviado este enlace a {email}. También puedes compartirlo directamente:",
     "inviteLinkShare": "El email no está configurado en este servidor: envía este enlace a {email}:",
     "inviteLink": "Enlace de invitación",
-    "linkCopied": "Nuevo enlace de invitación para {email} copiado al portapapeles"
+    "linkCopied": "Nuevo enlace de invitación para {email} copiado al portapapeles",
+    "resetPassword": "Restablecer contraseña",
+    "resetPasswordTitle": "¿Restablecer la contraseña de {name}?",
+    "resetPasswordDescription": "Recibirás un enlace de un solo uso para enviárselo. Con él elegirá una contraseña nueva y se cerrarán todas sus sesiones. El enlace caduca en 24 horas.",
+    "resetPasswordConfirm": "Crear enlace",
+    "resetLinkShare": "Envía este enlace a {email}. Solo funciona una vez y caduca en 24 horas:",
+    "resetLink": "Enlace para restablecer la contraseña"
   },
   "api": {
     "title": "API y MCP",

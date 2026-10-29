@@ -98,6 +98,8 @@ export const auth = betterAuth({
     minPasswordLength: 8,
     // Verification needs email; without SMTP, accounts are trusted (use SIGNUP_MODE/domains to restrict).
     requireEmailVerification: env.NODE_ENV === "production" && env.emailEnabled,
+    // A reset (emailed or shared by an admin) signs the account out everywhere.
+    revokeSessionsOnPasswordReset: true,
     sendResetPassword: async ({ user, url }) => {
       await sendMailSafe(resetPasswordEmail(user.email, url));
     },
