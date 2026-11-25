@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { latestEmailLink, uid } from "./fixture";
+import { E2E_EMAIL } from "./global-setup";
 
 test("a new user signs up, creates a workspace and lands on an empty posts list", async ({
   page,
@@ -26,4 +27,26 @@ test("a new user signs up, creates a workspace and lands on an empty posts list"
 test("protected pages redirect to login", async ({ page }) => {
   await page.goto("/app");
   await expect(page).toHaveURL(/\/login\?next=%2Fapp/);
+});
+
+test("a sign-in link works once; reusing it explains why instead of looping to login", async ({
+  page,
+  browser,
+}) => {
+  await page.goto("/login");
+  await page.getByLabel("Email").fill(E2E_EMAIL);
+  await page.getByRole("button", { name: "Email me a sign-in link" }).click();
+  await expect(page.getByRole("status")).toBeVisible();
+  const link = await latestEmailLink(E2E_EMAIL, "magic-link");
+
+  const other = await browser.newContext();
+  const second = await other.newPage();
+  await page.goto(link);
+  await expect(page).toHaveURL(/\/app/);
+  await expect(page).not.toHaveURL(/\/login/);
+
+  await second.goto(link);
+  await expect(second).toHaveURL(/\/login\?error=link/);
+  await expect(second.getByRole("alert")).toContainText("already used or has expired");
+  await other.close();
 });

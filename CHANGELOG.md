@@ -6,6 +6,13 @@ All notable changes to Featherlog are documented here. The format follows [Keep 
 
 ### Added
 
+### Fixed
+
+- Turning on SMTP no longer locks out accounts created without email verification: a password sign-in now sends the verification link the page promises.
+- A sign-in link that was already used or expired now returns to the login page with an explanation, instead of silently looping back to it.
+
+### Added
+
 - Release workflow: a `deploy-coolify` job restarts the Coolify service with the new image after each build. See [Deploying on Coolify](docs/deploy-coolify.md#3-updates).
 
 ## [0.2.0] - 2026-11-25

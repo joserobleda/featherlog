@@ -106,6 +106,9 @@ export const auth = betterAuth({
   },
   emailVerification: {
     sendOnSignUp: env.emailEnabled,
+    // Accounts created before SMTP was configured are unverified: signing in with a password sends
+    // the link the /verify page promises, instead of locking them out.
+    sendOnSignIn: env.emailEnabled,
     autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user, url }) => {
       await sendMailSafe(verifyEmail(user.email, url));
