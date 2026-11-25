@@ -39,8 +39,20 @@ backups/snapshots, or use `STORAGE_DRIVER=s3`.
 
 ## 3. Updates
 
-Redeploy in Coolify (it pulls the newest image for the tag), or enable automatic redeploys with the
-resource's webhook from the GitHub release workflow.
+Redeploy in Coolify with **Restart → Restart (pull latest)**, or let the GitHub release workflow do
+it after each image build (`deploy-coolify` job):
+
+1. In Coolify, **Keys & Tokens → API tokens**: create a token with the `deploy` permission. Coolify's
+   API must be enabled in **Settings → Advanced**.
+2. In the GitHub repository's `coolify` environment (Settings → Environments; add required
+   reviewers or branch rules there if you want a gate): secret `COOLIFY_TOKEN`, variables
+   `COOLIFY_URL` (`https://coolify.example.com`) and `COOLIFY_APP_URL` (Featherlog's URL, for the
+   smoke test).
+3. As repository variables (Settings → Secrets and variables → Actions → Variables), because the
+   job's condition reads them before the environment loads: `COOLIFY_SERVICE_UUID` (from the
+   service's URL, `…/service/<uuid>`) and, optionally, `COOLIFY_IMAGE_TAG`. `edge` (the default)
+   deploys every push to `main`; set it to `latest`, matching `FEATHERLOG_TAG`, to deploy only `v*`
+   releases.
 
 ## Resetting a forgotten password
 

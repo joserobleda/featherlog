@@ -4,6 +4,10 @@ All notable changes to Featherlog are documented here. The format follows [Keep 
 
 ## [Unreleased]
 
+### Added
+
+- Release workflow: a `deploy-coolify` job restarts the Coolify service with the new image after each build. See [Deploying on Coolify](docs/deploy-coolify.md#3-updates).
+
 ## [0.2.0] - 2026-11-25
 
 ### Added
