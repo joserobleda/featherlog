@@ -145,6 +145,31 @@ jobs:
         run: |
           for i in $(seq 1 30); do curl -fsS "${{ vars.PRODUCTION_URL }}/healthz" && exit 0; sleep 5; done; exit 1
 
+  # Coolify: restarts the Featherlog service pulling the new image. Repository variables:
+  # COOLIFY_SERVICE_UUID and COOLIFY_IMAGE_TAG (`edge`, the default, deploys every push to main;
+  # `latest` only v* tags). In the "coolify" environment: secret COOLIFY_TOKEN (API token with the
+  # "deploy" permission), variables COOLIFY_URL and COOLIFY_APP_URL. See docs/deploy-coolify.md.
+  deploy-coolify:
+    needs: image
+    if: >-
+      vars.COOLIFY_SERVICE_UUID != '' && (
+        (github.ref == 'refs/heads/main' && vars.COOLIFY_IMAGE_TAG != 'latest') ||
+        (startsWith(github.ref, 'refs/tags/v') && vars.COOLIFY_IMAGE_TAG == 'latest'))
+    runs-on: ubuntu-latest
+    environment: coolify
+    steps:
+      - name: Restart the service with the new image
+        env:
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+        run: |
+          curl -fsS -X POST \
+            -H "Authorization: Bearer $COOLIFY_TOKEN" \
+            "${{ vars.COOLIFY_URL }}/api/v1/services/${{ vars.COOLIFY_SERVICE_UUID }}/restart?latest=true"
+      - name: Smoke test
+        run: |
+          sleep 30
+          for i in $(seq 1 36); do curl -fsS "${{ vars.COOLIFY_APP_URL }}/healthz" && exit 0; sleep 5; done; exit 1
+
   npm-mcp:
     name: Publish @featherlog/mcp
     needs: image
