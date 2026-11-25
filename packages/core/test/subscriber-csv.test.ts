@@ -49,6 +49,13 @@ describe("subscriber CSV import", () => {
     expect(r.columns).toMatchObject({ optOut: "_BLOCKLISTED", externalId: "EXT_ID" });
   });
 
+  it("skips addresses the server would reject, so they never fail a whole batch", () => {
+    const csv = ["email", "ok@acme.com", "josé@acme.com", "ana..b@acme.com"].join("\n");
+    const r = subscribersFromCsv(csv);
+    expect(r.items).toEqual([{ email: "ok@acme.com" }]);
+    expect(r.skipped.map((s) => s.line)).toEqual([3, 4]);
+  });
+
   it("understands status columns, external ids and the mark-all option", () => {
     const csv = "email,name,status,external_id\nc@x.com,Cat,unsubscribed,42\nd@x.com,Dan,active,";
     expect(subscribersFromCsv(csv).items).toEqual([

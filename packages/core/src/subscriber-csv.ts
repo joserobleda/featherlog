@@ -1,4 +1,8 @@
+import { z } from "zod";
 import type { UpsertSubscriberInput } from "./subscribers";
+
+// The same check the server applies, so one address it rejects never fails a whole batch.
+const isEmail = (email: string) => z.email().safeParse(email).success;
 
 export const MAX_CSV_ROWS = 50_000;
 /** Most subscribers per batch upsert (REST `POST /subscribers/batch`, CSV import chunks). */
@@ -124,7 +128,7 @@ export function subscribersFromCsv(
   rows.slice(1).forEach((r, idx) => {
     const line = idx + 2;
     const email = cell(r, emailCol).toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    if (!isEmail(email)) {
       skipped.push({ line, reason: email ? `Invalid email: ${email}` : "No email" });
       return;
     }
