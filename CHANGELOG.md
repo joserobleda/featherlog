@@ -8,6 +8,8 @@ All notable changes to Featherlog are documented here. The format follows [Keep 
 
 ### Fixed
 
+- Subscriber CSV import reads the current Brevo export: `_BLOCKLISTED` columns with channel lists (`['email_marketing']`) become opt-outs, and `EXT_ID` is the external id.
+
 - Turning on SMTP no longer locks out accounts created without email verification: a password sign-in now sends the verification link the page promises.
 - A sign-in link that was already used or expired now returns to the login page with an explanation, instead of silently looping back to it.
 

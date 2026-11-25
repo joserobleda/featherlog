@@ -9,7 +9,7 @@ const NAME = ["name", "full name", "nombre completo"];
 const FIRST = ["firstname", "first name", "first_name", "nombre"];
 const LAST = ["lastname", "last name", "last_name", "surname", "apellidos", "apellido"];
 const LOCALE = ["locale", "language", "lang", "idioma"];
-const EXTERNAL = ["externalid", "external id", "external_id", "user id", "user_id"];
+const EXTERNAL = ["externalid", "external id", "external_id", "ext_id", "user id", "user_id"];
 const STATUS = ["status", "estado"];
 const OPT_OUT_FLAGS = [
   "unsubscribed",
@@ -77,7 +77,17 @@ export function parseCsv(text: string): string[][] {
   return rows.filter((r) => r.some((c) => c.trim() !== ""));
 }
 
-const norm = (h: string) => h.trim().toLowerCase().replace(/\s+/g, " ");
+// Brevo prefixes its subscription columns with "_" (`_BLOCKLISTED`, `_SUBSCRIBED`).
+const norm = (h: string) => h.trim().toLowerCase().replace(/\s+/g, " ").replace(/^_+/, "");
+
+/**
+ * An opt-out flag cell: a yes-like value, or Brevo's channel list (`['email_marketing']`) when it
+ * names an email channel (a contact blocklisted only for SMS still gets emails).
+ */
+const flagged = (value: string) => {
+  const v = norm(value);
+  return TRUE.has(v) || (/^\[.*\]$/.test(v) && v.includes("email"));
+};
 
 /**
  * Turns a CSV export (e.g. from Brevo/Sendinblue, Mailchimp or a spreadsheet) into subscriber
@@ -129,7 +139,7 @@ export function subscribersFromCsv(
     const optedOut =
       opts.markAllUnsubscribed === true ||
       OPT_OUT_STATUSES.has(status) ||
-      TRUE.has(norm(cell(r, flagCol)));
+      flagged(cell(r, flagCol));
     const item: UpsertSubscriberInput = { email };
     if (name) item.name = name;
     const locale = cell(r, localeCol);
