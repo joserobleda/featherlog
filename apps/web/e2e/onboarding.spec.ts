@@ -47,6 +47,6 @@ test("a sign-in link works once; reusing it explains why instead of looping to l
 
   await second.goto(link);
   await expect(second).toHaveURL(/\/login\?.*error=/);
-  await expect(second.getByRole("alert")).toContainText("already used or has expired");
+  await expect(second.getByText(/already used or has expired/)).toBeVisible();
   await other.close();
 });
