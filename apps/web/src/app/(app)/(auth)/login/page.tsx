@@ -13,9 +13,9 @@ const safeNext = (n?: string) => (n?.startsWith("/") && !n.startsWith("//") ? n 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string }>;
+  searchParams: Promise<{ next?: string; error?: string }>;
 }) {
-  const { next } = await searchParams;
+  const { next, error } = await searchParams;
   const target = safeNext(next);
   if (await getSession()) redirect(target);
   const t = await getTranslations("auth");
@@ -37,7 +37,12 @@ export default async function LoginPage({
         ) : null
       }
     >
-      <LoginForm next={target} googleEnabled={env.googleEnabled} emailEnabled={env.emailEnabled} />
+      <LoginForm
+        next={target}
+        googleEnabled={env.googleEnabled}
+        emailEnabled={env.emailEnabled}
+        linkError={error?.slice(0, 60)}
+      />
     </AuthShell>
   );
 }
