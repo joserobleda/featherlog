@@ -292,7 +292,9 @@
         "settings:write": "Cambiar ajustes",
         "members:admin": "Gestionar el equipo",
         "subscribers:read": "Ver suscriptores",
-        "subscribers:write": "Gestionar suscriptores"
+        "subscribers:write": "Gestionar suscriptores",
+        "newsletters:read": "Ver newsletters",
+        "newsletters:write": "Crear borradores de newsletter"
       }
     },
     "mcp": {
