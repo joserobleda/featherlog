@@ -292,7 +292,9 @@
         "settings:write": "Change settings",
         "members:admin": "Manage team",
         "subscribers:read": "View subscribers",
-        "subscribers:write": "Manage subscribers"
+        "subscribers:write": "Manage subscribers",
+        "newsletters:read": "View newsletters",
+        "newsletters:write": "Create newsletter drafts"
       }
     },
     "mcp": {

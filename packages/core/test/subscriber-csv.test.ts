@@ -33,6 +33,22 @@ describe("subscriber CSV import", () => {
     expect(r.columns).toMatchObject({ email: "EMAIL", locale: "LANGUAGE" });
   });
 
+  it("reads the current Brevo export: _BLOCKLISTED with channel lists and EXT_ID", () => {
+    const csv = [
+      "EMAIL;NOMBRE;SURNAME;EXT_ID;ADDED_TIME;MODIFIED_TIME;_SUBSCRIBED;_BLOCKLISTED",
+      "ana@acme.com;Ana;García;42;2024-01-01;2024-01-02;['email_marketing'];",
+      "bob@globex.com;Bob;;;2024-01-01;2024-01-02;;['email_marketing']",
+      "sms@globex.com;Sam;;;2024-01-01;2024-01-02;['email_marketing'];['sms']",
+    ].join("\n");
+    const r = subscribersFromCsv(csv);
+    expect(r.items).toEqual([
+      { email: "ana@acme.com", name: "Ana García", externalId: "42" },
+      { email: "bob@globex.com", name: "Bob", unsubscribed: true },
+      { email: "sms@globex.com", name: "Sam" },
+    ]);
+    expect(r.columns).toMatchObject({ optOut: "_BLOCKLISTED", externalId: "EXT_ID" });
+  });
+
   it("understands status columns, external ids and the mark-all option", () => {
     const csv = "email,name,status,external_id\nc@x.com,Cat,unsubscribed,42\nd@x.com,Dan,active,";
     expect(subscribersFromCsv(csv).items).toEqual([
