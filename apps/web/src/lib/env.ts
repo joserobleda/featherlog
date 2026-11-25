@@ -34,6 +34,13 @@ const schema = z.object({
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
   WORKER_MODE: z.enum(["inline", "separate", "off"]).default("inline"),
+  /** Optional: Claude writes newsletter drafts. Without it, drafts list each post's title and excerpt. */
+  ANTHROPIC_API_KEY: z.string().optional(),
+  NEWSLETTER_MODEL: z.string().default("claude-opus-5-5"),
+  /** Most newsletter emails sent per minute (keep it under your SMTP provider's limit). */
+  NEWSLETTER_RATE_PER_MINUTE: z.coerce.number().int().min(1).max(10_000).default(120),
+  /** Mailgun "HTTP webhook signing key": turns on /api/webhooks/mailgun (bounces, complaints). */
+  MAILGUN_WEBHOOK_SIGNING_KEY: z.string().optional(),
   MIGRATE_ON_START: bool,
   LOG_LEVEL: z.enum(["fatal", "error", "warn", "info", "debug", "trace"]).default("info"),
 });
@@ -67,6 +74,7 @@ function load() {
     WIDGET_URL: strip(env.WIDGET_URL ?? env.APP_URL),
     googleEnabled: Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET),
     emailEnabled: Boolean(env.SMTP_URL),
+    aiEnabled: Boolean(env.ANTHROPIC_API_KEY),
     allowedEmailDomains: (env.ALLOWED_EMAIL_DOMAINS ?? "")
       .split(",")
       .map((d) => d.trim().toLowerCase().replace(/^@/, ""))

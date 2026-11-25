@@ -2,6 +2,16 @@
 
 All notable changes to Featherlog are documented here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project uses [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- **Email subscribers**: a per-workspace subscriber list kept in sync from your app through the REST API (`PUT /subscribers/{externalId}`, `POST /subscribers/batch`, `DELETE`), with sticky opt-outs, language per subscriber and a **Settings → Subscribers** page. Includes a CSV import that detects Brevo/Mailchimp columns and keeps their opt-outs. New `subscribers:read` and `subscribers:write` scopes. First step towards product-update emails.
+
+- **Newsletters**: product-update emails made from the posts published since the last one. Claude writes the draft in every language when `ANTHROPIC_API_KEY` is set (otherwise a basic draft), a person reviews, previews, sends a test and sends it. Throttled, resumable sending through SMTP, unsubscribe links with RFC 8058 one-click headers, per-workspace sender name, reply-to, footer and AI guidance. REST (`/newsletters`) and MCP tools to prepare drafts; only the dashboard sends.
+- **Mailgun webhooks** (`/api/webhooks/mailgun`, signed with `MAILGUN_WEBHOOK_SIGNING_KEY`): permanent bounces mark subscribers as bounced and the delivery as failed; spam complaints and unsubscribes opt them out.
+- **Identified widget users**: `HW_config.user = { id, hash }`, signed with a per-workspace secret, keeps "seen" in sync across devices and records reads. Newsletter links are tracked per recipient. Newsletters show reads per post and can skip people who already read everything in the app.
+
 ## [0.1.0] - Unreleased
 
 First public release.

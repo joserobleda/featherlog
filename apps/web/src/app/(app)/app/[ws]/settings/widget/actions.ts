@@ -1,5 +1,5 @@
 "use server";
-import { updateWidgetSettings, WIDGET_STRING_KEYS } from "@featherlog/core";
+import { setWidgetIdentity, updateWidgetSettings, WIDGET_STRING_KEYS } from "@featherlog/core";
 import { revalidatePath } from "next/cache";
 import { runAction } from "@/lib/actions";
 import { getWorkspaceContext } from "@/lib/session";
@@ -44,6 +44,17 @@ export async function updateWidgetAction(wsSlug: string, input: WidgetFormInput)
       stickyFooter: input.stickyFooter,
       uiStrings,
     });
+    revalidatePath(`/app/${workspace.slug}/settings/widget`);
+  });
+}
+
+export async function setWidgetIdentityAction(
+  wsSlug: string,
+  mode: "enable" | "rotate" | "disable",
+) {
+  const { ctx, workspace } = await getWorkspaceContext(wsSlug);
+  return runAction(async () => {
+    await setWidgetIdentity(ctx, mode);
     revalidatePath(`/app/${workspace.slug}/settings/widget`);
   });
 }

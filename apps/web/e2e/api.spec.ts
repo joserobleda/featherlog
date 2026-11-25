@@ -90,3 +90,42 @@ test("REST API: auth errors and OpenAPI document", async ({ request }) => {
   expect(doc.openapi).toBe("3.1.0");
   expect(Object.keys(doc.paths)).toContain("/api/v1/posts/{id}/publish");
 });
+
+test("REST API: keep subscribers in sync by external id", async ({ request }) => {
+  const f = fixture();
+  const headers = { Authorization: `Bearer ${f.apiKey}` };
+  const id = `user-${uid()}`;
+
+  const created = await request.put(`/api/v1/subscribers/${id}`, {
+    headers,
+    data: { email: `${id}@Example.com`, name: "Ada", locale: "es-ES", attributes: { org: "Acme" } },
+  });
+  expect(created.status()).toBe(201);
+  expect(await created.json()).toMatchObject({
+    externalId: id,
+    email: `${id}@example.com`,
+    locale: "es",
+    status: "subscribed",
+  });
+
+  const moved = await request.put(`/api/v1/subscribers/${id}`, {
+    headers,
+    data: { email: `${id}@new.example.com`, unsubscribed: true },
+  });
+  expect(moved.status()).toBe(200);
+  expect(await moved.json()).toMatchObject({ name: "Ada", status: "unsubscribed" });
+
+  const resync = await request.post("/api/v1/subscribers/batch", {
+    headers,
+    data: { items: [{ externalId: id, email: `${id}@new.example.com`, unsubscribed: false }] },
+  });
+  expect(await resync.json()).toEqual({ created: 0, updated: 0, unchanged: 1 });
+  const got = await request.get(`/api/v1/subscribers/${id}`, { headers });
+  expect((await got.json()).status).toBe("unsubscribed");
+
+  const list = await request.get(`/api/v1/subscribers?q=${id}`, { headers });
+  expect((await list.json()).items).toHaveLength(1);
+
+  expect((await request.delete(`/api/v1/subscribers/${id}`, { headers })).status()).toBe(204);
+  expect((await request.get(`/api/v1/subscribers/${id}`, { headers })).status()).toBe(404);
+});

@@ -741,6 +741,9 @@ export async function rerenderWorkspacePosts(db: DbOrTx, workspaceId: string) {
   for (const r of rows) await syncRendered(db, ws, r.id);
 }
 
+/** Hydrates post rows (translations, categories, author). For other core modules. */
+export const hydratePosts = hydrate;
+
 /* ---------- public, transactional entry points ---------- */
 
 export const createPost = (ctx: Ctx, raw: z.input<typeof CreatePostInput>) =>

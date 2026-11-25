@@ -18,6 +18,8 @@
     "categories:write": "Gestionar categorías",
     "assets:write": "Subir imágenes",
     "settings:write": "Cambiar ajustes del espacio y del widget",
-    "members:admin": "Invitar y gestionar al equipo"
+    "members:admin": "Invitar y gestionar al equipo",
+    "subscribers:read": "Ver los suscriptores por email",
+    "subscribers:write": "Añadir, actualizar y dar de baja suscriptores"
   }
 }

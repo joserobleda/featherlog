@@ -1,6 +1,7 @@
 import {
   type Category,
   countPendingReview,
+  type Newsletter,
   type Post,
   publicPostPath,
   type Workspace,
@@ -99,4 +100,31 @@ export function expectedVersionFrom(header: string | undefined): number | undefi
   if (!header) return undefined;
   const m = /-v(\d+)"?$/.exec(header.trim()) ?? /^"?(\d+)"?$/.exec(header.trim());
   return m ? Number(m[1]) : undefined;
+}
+
+/** Dashboard link to a newsletter (where a human reviews and sends it). */
+export const adminNewsletterUrl = (ws: Workspace, n: Pick<Newsletter, "id">) =>
+  `${env.APP_URL}/app/${ws.slug}/newsletters/${n.id}`;
+
+export function serializeNewsletter(ws: Workspace, n: Newsletter) {
+  return {
+    id: n.id,
+    status: n.status,
+    generator: n.generator,
+    error: n.error,
+    periodFrom: n.periodFrom?.toISOString() ?? null,
+    periodTo: n.periodTo?.toISOString() ?? null,
+    createdVia: n.createdVia,
+    actorLabel: n.actorLabel,
+    version: n.version,
+    recipients: n.recipients,
+    sentCount: n.sentCount,
+    failedCount: n.failedCount,
+    sentAt: n.sentAt?.toISOString() ?? null,
+    createdAt: n.createdAt.toISOString(),
+    updatedAt: n.updatedAt.toISOString(),
+    translations: n.translations,
+    posts: n.posts,
+    adminUrl: adminNewsletterUrl(ws, n),
+  };
 }

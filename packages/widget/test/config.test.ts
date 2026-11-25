@@ -36,7 +36,18 @@ describe("normalizeConfig", () => {
       token: "",
       language: "fr-FR",
       widgetUrl: "https://w.test",
+      user: null,
     });
+  });
+
+  it("keeps a signed user only when both id and hash are present", () => {
+    const n = (user: unknown) =>
+      normalizeConfig({ account: "acc", widgetUrl: "https://w.test", user } as never, {
+        doc: document,
+      })?.user;
+    expect(n({ id: 42, hash: "abc" })).toEqual({ id: "42", hash: "abc" });
+    expect(n({ id: "42" })).toBeNull();
+    expect(n("42")).toBeNull();
   });
 
   it("prefers <html lang> over navigator.language, and explicit language over both", () => {

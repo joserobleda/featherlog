@@ -90,6 +90,10 @@ export function normalizeConfig(
     token: raw.token || "",
     language: raw.language || ctx.doc.documentElement.lang || ctx.nav?.language || "",
     widgetUrl,
+    user:
+      raw.user && typeof raw.user === "object" && raw.user.id && raw.user.hash
+        ? { id: String(raw.user.id), hash: String(raw.user.hash) }
+        : null,
   };
 }
 
@@ -200,12 +204,51 @@ export function createWidget(
     for (let i = 1; i <= 3; i++) cl.toggle(`fl-eye-${i}`, tier === i);
   };
 
+  const recount = () => {
+    if (!settings) return;
+    unseen = computeUnseen(
+      items,
+      loadIds("seen"),
+      settings.expireAfterDays ?? null,
+      Date.now(),
+    ).length;
+    render();
+  };
+
+  /**
+   * Identified users: tells the server what was just seen and merges what this person saw
+   * elsewhere (another device, a newsletter), so the badge doesn't count it as new.
+   */
+  const syncSeen = (ids: string[]) => {
+    if (!cfg.user || typeof win.fetch !== "function") return;
+    win
+      .fetch(`${cfg.widgetUrl}/api/widget/${encodeURIComponent(cfg.account)}/seen`, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain" },
+        body: JSON.stringify({ user: cfg.user.id, hash: cfg.user.hash, ids }),
+        credentials: "omit",
+        keepalive: true,
+      })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: { seen?: unknown } | null) => {
+        if (!d || !Array.isArray(d.seen)) return;
+        const known = new Set(loadIds("seen"));
+        const fresh = d.seen.filter((id): id is string => typeof id === "string" && !known.has(id));
+        if (fresh.length === 0) return;
+        addIds("seen", fresh);
+        if (unseen) recount();
+      })
+      .catch(() => {
+        /* offline or blocked: local state still works */
+      });
+  };
+
   const markAllSeen = () => {
-    if (items.length)
-      addIds(
-        "seen",
-        items.map((i) => i.id),
-      );
+    if (items.length) {
+      const ids = items.map((i) => i.id);
+      addIds("seen", ids);
+      syncSeen(ids);
+    }
     unseen = 0;
     views = 0;
     save("views", 0);
@@ -298,6 +341,7 @@ export function createWidget(
             origin,
           );
         unseen = computeUnseen(items, seen, settings.expireAfterDays ?? null, Date.now()).length;
+        if (!cfg.embed) syncSeen([]);
         const v = Number(load("views")) || 0;
         views = unseen ? v + 1 : 0;
         save("views", views);

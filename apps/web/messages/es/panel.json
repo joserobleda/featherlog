@@ -14,7 +14,9 @@
     "newWorkspace": "Nuevo espacio",
     "workspaces": "Espacios",
     "docs": "Documentación",
-    "pendingReview": "{count, plural, one {# entrada pendiente de revisión} other {# entradas pendientes de revisión}}"
+    "pendingReview": "{count, plural, one {# entrada pendiente de revisión} other {# entradas pendientes de revisión}}",
+    "subscribers": "Suscriptores",
+    "newsletters": "Newsletters"
   },
   "onboarding": {
     "title": "Crea tu espacio",

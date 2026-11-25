@@ -167,7 +167,15 @@ export async function seed(
     await updateWidgetSettings(ctx, { eyecatcher: "on", badgeDelay: 0, entriesLimit: 5 });
     const { secret } = await createApiKey(ctx, {
       name: "Demo key",
-      scopes: ["posts:read", "posts:write", "posts:publish", "categories:write", "assets:write"],
+      scopes: [
+        "posts:read",
+        "posts:write",
+        "posts:publish",
+        "categories:write",
+        "assets:write",
+        "subscribers:read",
+        "subscribers:write",
+      ],
     });
 
     if (!opts.quiet) {

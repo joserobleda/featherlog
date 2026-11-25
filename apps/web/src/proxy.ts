@@ -17,7 +17,7 @@ const WIDGET_HOST = new URL(env.WIDGET_URL).host.toLowerCase();
 const WIDGET_PATH = /^\/(?:widget\.js$|widget\/|_widget\/|api\/widget\/|healthz$|uploads\/)/;
 /** Paths that belong to the panel/app host only. */
 const APP_PATH =
-  /^\/(?:app|login|logout|signup|register|forgot-password|reset-password|verify|invite|consent|oauth|mcp|api|\.well-known)(?:\/|$)/;
+  /^\/(?:app|login|logout|signup|register|forgot-password|reset-password|verify|invite|unsubscribe|consent|oauth|mcp|api|\.well-known)(?:\/|$)/;
 /** First path segments that are never a workspace slug. */
 const NON_PUBLIC_SEGMENT = new Set([
   "",

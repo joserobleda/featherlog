@@ -14,7 +14,9 @@
     "newWorkspace": "New workspace",
     "workspaces": "Workspaces",
     "docs": "Documentation",
-    "pendingReview": "{count, plural, one {# post waiting for review} other {# posts waiting for review}}"
+    "pendingReview": "{count, plural, one {# post waiting for review} other {# posts waiting for review}}",
+    "subscribers": "Subscribers",
+    "newsletters": "Newsletters"
   },
   "onboarding": {
     "title": "Create your workspace",

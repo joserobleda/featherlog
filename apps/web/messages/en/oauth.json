@@ -18,6 +18,8 @@
     "categories:write": "Manage categories",
     "assets:write": "Upload images",
     "settings:write": "Change workspace and widget settings",
-    "members:admin": "Invite and manage team members"
+    "members:admin": "Invite and manage team members",
+    "subscribers:read": "View email subscribers",
+    "subscribers:write": "Add, update and unsubscribe email subscribers"
   }
 }

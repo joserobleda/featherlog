@@ -9,6 +9,7 @@ import {
   primaryKey,
   text,
   timestamp,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 const ts = (name: string) => timestamp(name, { withTimezone: true, mode: "date" });
@@ -279,12 +280,193 @@ export const widgetSettings = pgTable("widget_settings", {
   /** Keep the footer ("See all updates") pinned to the bottom instead of after the list. */
   stickyFooter: boolean("sticky_footer").notNull().default(false),
   /** Per-locale overrides of the widget UI strings: { es: { title: "..." } } */
+  /**
+   * Secret for identified widget users: the host app passes `user: { id, hash }` where
+   * `hash = hex(HMAC-SHA256(secret, id))`. Null while identification is off.
+   */
+  identitySecret: text("identity_secret"),
   uiStrings: jsonb("ui_strings")
     .$type<Record<string, Record<string, string>>>()
     .notNull()
     .default({}),
   updatedAt: updatedAt(),
 });
+
+/* ------------------------------------------------------------------ */
+/* Email subscribers                                                   */
+/* ------------------------------------------------------------------ */
+
+/**
+ * People who receive product-update emails. Usually kept in sync by another app through the
+ * REST API (`externalId` is that app's user id). Unsubscribes are sticky: an upsert from the
+ * syncing app never re-subscribes someone who opted out.
+ */
+export const subscribers = pgTable(
+  "subscribers",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    /** Stored lowercased. */
+    email: text("email").notNull(),
+    externalId: text("external_id"),
+    name: text("name"),
+    /** One of the supported locales; null means the workspace default. */
+    locale: text("locale"),
+    /** Free-form data from the syncing app (e.g. company name). */
+    attributes: jsonb("attributes").$type<Record<string, string>>().notNull().default({}),
+    /** `subscribed` | `unsubscribed` | `bounced` */
+    status: text("status").notNull().default("subscribed"),
+    unsubscribedAt: ts("unsubscribed_at"),
+    /** `api` | `import` | `panel` */
+    source: text("source").notNull().default("api"),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [
+    uniqueIndex("subscribers_email_idx").on(t.workspaceId, t.email),
+    uniqueIndex("subscribers_external_idx").on(t.workspaceId, t.externalId),
+    index("subscribers_status_idx").on(t.workspaceId, t.status, t.createdAt),
+  ],
+);
+
+/* ------------------------------------------------------------------ */
+/* Newsletters (product-update emails)                                 */
+/* ------------------------------------------------------------------ */
+
+/**
+ * An email that gathers posts published since the previous one. Created as a draft (written by
+ * Claude when configured), reviewed in the dashboard, then sent to every subscriber.
+ */
+export const newsletters = pgTable(
+  "newsletters",
+  {
+    id: text("id").primaryKey(),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    /** `generating` | `draft` | `sending` | `sent` | `failed` */
+    status: text("status").notNull().default("draft"),
+    /** `ai` | `basic` (title + excerpt) | `manual` */
+    generator: text("generator").notNull().default("basic"),
+    /** Why generation or sending failed. */
+    error: text("error"),
+    periodFrom: ts("period_from"),
+    periodTo: ts("period_to"),
+    createdVia: text("created_via").notNull().default("panel"),
+    createdBy: text("created_by").references(() => user.id, { onDelete: "set null" }),
+    actorLabel: text("actor_label"),
+    sentBy: text("sent_by").references(() => user.id, { onDelete: "set null" }),
+    sendStartedAt: ts("send_started_at"),
+    sentAt: ts("sent_at"),
+    recipients: integer("recipients").notNull().default(0),
+    sentCount: integer("sent_count").notNull().default(0),
+    failedCount: integer("failed_count").notNull().default(0),
+    version: integer("version").notNull().default(1),
+    createdAt: createdAt(),
+    updatedAt: updatedAt(),
+  },
+  (t) => [index("newsletters_workspace_idx").on(t.workspaceId, t.createdAt)],
+);
+
+export const newsletterTranslations = pgTable(
+  "newsletter_translations",
+  {
+    newsletterId: text("newsletter_id")
+      .notNull()
+      .references(() => newsletters.id, { onDelete: "cascade" }),
+    locale: text("locale").notNull(),
+    subject: text("subject").notNull(),
+    /** Preview text shown after the subject in most inboxes. */
+    preheader: text("preheader").notNull().default(""),
+    contentMd: text("content_md").notNull().default(""),
+    updatedAt: updatedAt(),
+  },
+  (t) => [primaryKey({ columns: [t.newsletterId, t.locale] })],
+);
+
+/** Posts included in a newsletter. A post goes out in at most one newsletter. */
+export const newsletterPosts = pgTable(
+  "newsletter_posts",
+  {
+    newsletterId: text("newsletter_id")
+      .notNull()
+      .references(() => newsletters.id, { onDelete: "cascade" }),
+    postId: text("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    position: integer("position").notNull().default(0),
+    /** Shown in full (true) or as a one-line brief (false). */
+    featured: boolean("featured").notNull().default(false),
+  },
+  (t) => [
+    primaryKey({ columns: [t.newsletterId, t.postId] }),
+    uniqueIndex("newsletter_posts_post_idx").on(t.postId),
+  ],
+);
+
+/** One row per recipient, so sending can resume after a crash without emailing anyone twice. */
+export const newsletterDeliveries = pgTable(
+  "newsletter_deliveries",
+  {
+    newsletterId: text("newsletter_id")
+      .notNull()
+      .references(() => newsletters.id, { onDelete: "cascade" }),
+    subscriberId: text("subscriber_id")
+      .notNull()
+      .references(() => subscribers.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    locale: text("locale").notNull(),
+    /** `pending` | `sent` | `failed` */
+    status: text("status").notNull().default("pending"),
+    error: text("error"),
+    sentAt: ts("sent_at"),
+  },
+  (t) => [
+    primaryKey({ columns: [t.newsletterId, t.subscriberId] }),
+    index("newsletter_deliveries_status_idx").on(t.newsletterId, t.status),
+  ],
+);
+
+export const newsletterSettings = pgTable("newsletter_settings", {
+  workspaceId: text("workspace_id")
+    .primaryKey()
+    .references(() => workspaces.id, { onDelete: "cascade" }),
+  /** Sender name; the address is the instance's MAIL_FROM. */
+  fromName: text("from_name"),
+  replyTo: text("reply_to"),
+  /** Legal footer: company name and postal address. */
+  footerText: text("footer_text").notNull().default(""),
+  /** Extra guidance for the AI writer (tone, what to highlight…). */
+  aiInstructions: text("ai_instructions").notNull().default(""),
+  /** Skip subscribers who already saw every post of the newsletter in the widget. */
+  skipReaders: boolean("skip_readers").notNull().default(false),
+  updatedAt: updatedAt(),
+});
+
+/** Which subscriber has seen which post, in the widget (identified users) or from an email. */
+export const postViews = pgTable(
+  "post_views",
+  {
+    postId: text("post_id")
+      .notNull()
+      .references(() => posts.id, { onDelete: "cascade" }),
+    subscriberId: text("subscriber_id")
+      .notNull()
+      .references(() => subscribers.id, { onDelete: "cascade" }),
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    /** Where it was seen first: `widget` | `email` */
+    source: text("source").notNull(),
+    seenAt: ts("seen_at").notNull().defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.postId, t.subscriberId] }),
+    index("post_views_subscriber_idx").on(t.subscriberId),
+  ],
+);
 
 /* ------------------------------------------------------------------ */
 /* API / integrations                                                  */

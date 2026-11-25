@@ -356,3 +356,54 @@ describe("loader", () => {
     win.HW_config = undefined;
   });
 });
+
+describe("identified users", () => {
+  const flush = () => new Promise((r) => setTimeout(r, 0));
+
+  it("sends nothing to the server without a signed user", () => {
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    setup();
+    fromFrame("ready", readyPayload());
+    expect(fetch).not.toHaveBeenCalled();
+    vi.unstubAllGlobals();
+  });
+
+  it("merges what the user saw elsewhere and reports what they open", async () => {
+    const fetch = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ seen: ["a", "b", "zzz"] }),
+    }));
+    vi.stubGlobal("fetch", fetch);
+    const { api } = setup({ user: { id: "42", hash: "f00" } });
+    fromFrame("ready", readyPayload());
+    const before = api.getUnseenCount();
+    expect(before).toBeGreaterThan(0);
+    await flush();
+    await flush();
+    expect(api.getUnseenCount()).toBeLessThan(before);
+
+    const [url, init] = fetch.mock.calls[0] as unknown as [string, RequestInit];
+    expect(url).toBe(`${ORIGIN}/api/widget/acc/seen`);
+    expect(init).toMatchObject({ method: "POST", credentials: "omit", keepalive: true });
+    expect(init.headers).toEqual({ "Content-Type": "text/plain" });
+    expect(JSON.parse(init.body as string)).toEqual({ user: "42", hash: "f00", ids: [] });
+
+    api.show();
+    const last = fetch.mock.calls.at(-1) as unknown as [string, RequestInit];
+    expect(JSON.parse(last[1].body as string).ids).toEqual(readyPayload().items.map((i) => i.id));
+    vi.unstubAllGlobals();
+  });
+
+  it("keeps working when the server is unreachable", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Promise.reject(new Error("offline"))),
+    );
+    const { api } = setup({ user: { id: "42", hash: "f00" } });
+    fromFrame("ready", readyPayload());
+    await flush();
+    expect(api.getUnseenCount()).toBeGreaterThan(0);
+    vi.unstubAllGlobals();
+  });
+});

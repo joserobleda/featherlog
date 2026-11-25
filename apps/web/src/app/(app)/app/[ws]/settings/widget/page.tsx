@@ -8,6 +8,7 @@ import { db } from "@/lib/db";
 import { env } from "@/lib/env";
 import { widgetStrings } from "@/lib/public-i18n";
 import { getSettingsContext } from "../_lib/guard";
+import { IdentityCard } from "./identity-card";
 import { WidgetSettingsForm } from "./widget-settings-form";
 
 export async function generateMetadata() {
@@ -83,6 +84,11 @@ useEffect(() => {
             </details>
           </CardBody>
         </Card>
+        <IdentityCard
+          wsSlug={workspace.slug}
+          publicId={workspace.publicId}
+          secret={settings.identitySecret}
+        />
         <WidgetSettingsForm
           wsSlug={workspace.slug}
           workspaceAccent={workspace.accentColor}
