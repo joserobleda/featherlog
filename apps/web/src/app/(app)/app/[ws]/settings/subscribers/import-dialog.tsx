@@ -50,7 +50,10 @@ export function ImportDialog({ wsSlug }: { wsSlug: string }) {
       const res = await importSubscribersAction(
         wsSlug,
         preview.items.slice(i, i + MAX_SUBSCRIBER_BATCH),
-      );
+      ).catch((e: unknown) => ({
+        ok: false as const,
+        error: e instanceof Error ? e.message : String(e),
+      }));
       if (!res.ok) {
         toast.error(res.error);
         setProgress(null);
