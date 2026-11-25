@@ -1,0 +1,1 @@
+ALTER TABLE "newsletter_settings" ADD COLUMN "posts_since" timestamp with time zone;

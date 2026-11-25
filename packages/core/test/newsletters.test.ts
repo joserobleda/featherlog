@@ -75,6 +75,19 @@ describe("newsletters", () => {
     expect(await listCandidatePosts(f.owner)).toHaveLength(2);
   });
 
+  it("leaves out posts published before the postsSince setting", async () => {
+    const f = await fixture();
+    await f.post("Old", { daysAgo: 30 });
+    const recent = await f.post("Recent", { daysAgo: 2 });
+    const s = await updateNewsletterSettings(f.owner, {
+      postsSince: new Date(Date.now() - 10 * day).toISOString().slice(0, 10),
+    });
+    expect(s.postsSince).toBeInstanceOf(Date);
+    expect((await listCandidatePosts(f.owner)).map((p) => p.id)).toEqual([recent.id]);
+    await updateNewsletterSettings(f.owner, { postsSince: "" });
+    expect(await listCandidatePosts(f.owner)).toHaveLength(2);
+  });
+
   it("rejects posts that are not candidates", async () => {
     const f = await fixture();
     const draft = await f.post("Draft", { publish: false });

@@ -14,6 +14,7 @@ type Values = {
   footerText: string;
   aiInstructions: string;
   skipReaders: boolean;
+  postsSince: string;
 };
 
 export function NewsletterSettingsForm({
@@ -88,6 +89,20 @@ export function NewsletterSettingsForm({
               value={v.aiInstructions}
               maxLength={4000}
               onChange={(e) => set({ aiInstructions: e.target.value })}
+            />
+          </Field>
+          <Field
+            label={t("postsSince")}
+            htmlFor="nl-since"
+            hint={t("postsSinceHint")}
+            error={errors.postsSince}
+          >
+            <Input
+              id="nl-since"
+              type="date"
+              className="w-fit"
+              value={v.postsSince}
+              onChange={(e) => set({ postsSince: e.target.value })}
             />
           </Field>
           <SwitchRow

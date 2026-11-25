@@ -9,7 +9,7 @@ import {
   postViews,
   subscribers,
 } from "@featherlog/db";
-import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
 import { actorLabel, actorUserId, assertCan, type Ctx } from "./auth";
 import { AppError, notFound } from "./errors";
@@ -65,6 +65,10 @@ export const UpdateNewsletterSettingsInput = z
     footerText: z.string().max(1000),
     aiInstructions: z.string().max(4000),
     skipReaders: z.boolean(),
+    postsSince: z
+      .literal("")
+      .transform(() => null)
+      .or(z.coerce.date().nullable()),
   })
   .partial();
 
@@ -120,9 +124,17 @@ function assertEditable(row: NewsletterRow) {
 
 /* ---------- reading ---------- */
 
-/** Published posts that have not gone out in any newsletter yet, oldest first. */
+/**
+ * Published posts that have not gone out in any newsletter yet, oldest first. Posts published
+ * before the workspace's `postsSince` setting are left out.
+ */
 export async function listCandidatePosts(ctx: Ctx): Promise<Post[]> {
   assertCan(ctx, "newsletters:read");
+  const [settings] = await ctx.db
+    .select({ postsSince: newsletterSettings.postsSince })
+    .from(newsletterSettings)
+    .where(eq(newsletterSettings.workspaceId, ctx.workspaceId));
+  const since = settings?.postsSince;
   const rows = await ctx.db
     .select()
     .from(posts)
@@ -132,6 +144,7 @@ export async function listCandidatePosts(ctx: Ctx): Promise<Post[]> {
         isNull(posts.deletedAt),
         eq(posts.published, true),
         sql`${posts.publishedAt} <= now()`,
+        since ? gte(posts.publishedAt, since) : undefined,
         sql`not exists (select 1 from ${newsletterPosts} where ${newsletterPosts.postId} = ${posts.id})`,
       ),
     )

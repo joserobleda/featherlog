@@ -6,6 +6,8 @@ All notable changes to Featherlog are documented here. The format follows [Keep 
 
 ### Added
 
+- Newsletter setting **Include posts since**: posts published before that date never go in an email, so the first one from Featherlog starts where the last email from another tool left off.
+
 ### Fixed
 
 - Subscriber CSV import validates addresses like the server, so one it rejects (e.g. a non-ASCII local part) is listed as skipped instead of stopping the import halfway; a failed batch now shows its error. Test addresses on reserved domains (`.example`, `.invalid`, `.test`, `.localhost`) are skipped too.
