@@ -4,6 +4,8 @@ All notable changes to Featherlog are documented here. The format follows [Keep 
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-25
+
 ### Added
 
 - **Email subscribers**: a per-workspace subscriber list kept in sync from your app through the REST API (`PUT /subscribers/{externalId}`, `POST /subscribers/batch`, `DELETE`), with sticky opt-outs, language per subscriber and a **Settings → Subscribers** page. Includes a CSV import that detects Brevo/Mailchimp columns and keeps their opt-outs. New `subscribers:read` and `subscribers:write` scopes. First step towards product-update emails.
