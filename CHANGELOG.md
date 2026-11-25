@@ -8,7 +8,7 @@ All notable changes to Featherlog are documented here. The format follows [Keep 
 
 ### Fixed
 
-- Subscriber CSV import validates addresses like the server, so one it rejects (e.g. a non-ASCII local part) is listed as skipped instead of stopping the import halfway; a failed batch now shows its error.
+- Subscriber CSV import validates addresses like the server, so one it rejects (e.g. a non-ASCII local part) is listed as skipped instead of stopping the import halfway; a failed batch now shows its error. Test addresses on reserved domains (`.example`, `.invalid`, `.test`, `.localhost`) are skipped too.
 - Subscriber CSV import reads the current Brevo export: `_BLOCKLISTED` columns with channel lists (`['email_marketing']`) become opt-outs, and `EXT_ID` is the external id.
 
 - Turning on SMTP no longer locks out accounts created without email verification: a password sign-in now sends the verification link the page promises.

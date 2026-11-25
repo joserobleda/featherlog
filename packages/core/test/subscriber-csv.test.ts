@@ -56,6 +56,12 @@ describe("subscriber CSV import", () => {
     expect(r.skipped.map((s) => s.line)).toEqual([3, 4]);
   });
 
+  it("skips test addresses on reserved domains, which never receive mail", () => {
+    const r = subscribersFromCsv("email\nqa@x.example\nbot@sec.invalid\nme@app.test\nok@acme.com");
+    expect(r.items).toEqual([{ email: "ok@acme.com" }]);
+    expect(r.skipped).toHaveLength(3);
+  });
+
   it("understands status columns, external ids and the mark-all option", () => {
     const csv = "email,name,status,external_id\nc@x.com,Cat,unsubscribed,42\nd@x.com,Dan,active,";
     expect(subscribersFromCsv(csv).items).toEqual([
