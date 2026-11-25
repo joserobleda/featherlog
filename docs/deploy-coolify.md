@@ -20,7 +20,13 @@ the same machine.
    | `ALLOWED_EMAIL_DOMAINS` | `example.com` |
    | `AUTO_JOIN_WORKSPACE` | `example` (the slug you create on first login) |
    | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | from a Google Cloud OAuth client (type *Internal* for a Workspace-only app); redirect URI `https://<domain>/api/auth/callback/google` |
+   | `SMTP_URL` / `MAIL_FROM` | `smtps://user:pass@smtp.eu.mailgun.org:465` / `Product <updates@example.com>` (invitations and newsletters) |
+   | `ANTHROPIC_API_KEY` | optional: Claude writes newsletter drafts ([Newsletters](newsletters.md)) |
+   | `MAILGUN_WEBHOOK_SIGNING_KEY` | optional: records bounces and complaints ([Sending with Mailgun](newsletters.md#sending-with-mailgun)) |
    | `FEATHERLOG_TAG` | `latest` (releases) or `edge` (main branch) |
+
+   If you pasted an older copy of the compose file into Coolify, paste this one again: Coolify only
+   passes the variables the file lists.
 
 4. **Deploy**. Migrations run on start; the health check uses `/healthz`.
 5. Open the URL, create the first account and your workspace.
