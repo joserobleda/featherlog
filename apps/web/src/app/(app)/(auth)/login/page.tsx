@@ -41,7 +41,7 @@ export default async function LoginPage({
         next={target}
         googleEnabled={env.googleEnabled}
         emailEnabled={env.emailEnabled}
-        linkFailed={error === "link"}
+        linkError={error?.slice(0, 60)}
       />
     </AuthShell>
   );

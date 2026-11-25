@@ -32,20 +32,22 @@ export function LoginForm({
   next,
   googleEnabled,
   emailEnabled = true,
-  linkFailed = false,
+  linkError,
 }: {
   next: string;
   googleEnabled: boolean;
   /** Magic links and password resets need SMTP. */
   emailEnabled?: boolean;
-  /** Came back from a sign-in link that was already used or expired. */
-  linkFailed?: boolean;
+  /** better-auth error code after a sign-in link failed (used, expired…). Shown for support. */
+  linkError?: string;
 }) {
   const t = useTranslations("auth");
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(linkFailed ? t("magicLinkInvalid") : null);
+  const [error, setError] = useState<string | null>(
+    linkError ? `${t("magicLinkInvalid")} (${linkError})` : null,
+  );
   const [info, setInfo] = useState<string | null>(null);
   const [loading, setLoading] = useState<"password" | "magic" | null>(null);
 
@@ -77,8 +79,9 @@ export function LoginForm({
       return;
     }
     setLoading("magic");
-    // A used or expired link lands back here with a message instead of a silent redirect to /app.
-    const errorCallbackURL = `/login?error=link&next=${encodeURIComponent(next)}`;
+    // A used or expired link lands back on /login (better-auth adds ?error=CODE) with a message
+    // instead of a silent redirect to /app and from there to /login.
+    const errorCallbackURL = `/login?next=${encodeURIComponent(next)}`;
     const { error } = await authClient.signIn.magicLink({
       email,
       callbackURL: next,
