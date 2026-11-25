@@ -75,6 +75,7 @@ export const RESERVED_SLUGS = new Set([
   "signup",
   "register",
   "invite",
+  "unsubscribe",
   "auth",
   "admin",
   "settings",

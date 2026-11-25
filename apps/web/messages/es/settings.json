@@ -133,7 +133,24 @@
       "below": "Debajo del título"
     },
     "stickyFooter": "Mostrar siempre «Ver todas las novedades»",
-    "stickyFooterDescription": "Fija el enlace en la parte inferior del widget. Si está desactivado, aparece después de la última entrada."
+    "stickyFooterDescription": "Fija el enlace en la parte inferior del widget. Si está desactivado, aparece después de la última entrada.",
+    "identity": {
+      "title": "Identificar a los usuarios",
+      "description": "Indica quién ha iniciado sesión en tu aplicación, para que lo que lee se recuerde en todos sus dispositivos y las newsletters sepan quién ya vio una novedad.",
+      "enable": "Activar",
+      "secret": "Secreto de identidad del widget",
+      "secretHint": "Guárdalo en tu servidor, como una contraseña. Tu servidor lo usa para firmar el id de cada usuario.",
+      "serverComment": "En tu servidor, para el usuario con sesión iniciada",
+      "idComment": "el mismo id que envías como externalId a /subscribers",
+      "serverLabel": "Servidor",
+      "clientLabel": "Widget",
+      "rotate": "Rotar secreto",
+      "rotateTitle": "¿Rotar el secreto?",
+      "rotateDescription": "Las firmas hechas con el secreto actual dejan de funcionar hasta que tu aplicación use el nuevo.",
+      "disable": "Desactivar",
+      "disableTitle": "¿Desactivar la identificación de usuarios?",
+      "disableDescription": "El widget sigue funcionando de forma anónima. Las lecturas ya registradas se conservan."
+    }
   },
   "categories": {
     "title": "Categorías",
@@ -273,7 +290,9 @@
         "categories:write": "Gestionar categorías",
         "assets:write": "Subir imágenes",
         "settings:write": "Cambiar ajustes",
-        "members:admin": "Gestionar el equipo"
+        "members:admin": "Gestionar el equipo",
+        "subscribers:read": "Ver suscriptores",
+        "subscribers:write": "Gestionar suscriptores"
       }
     },
     "mcp": {
@@ -363,5 +382,69 @@
     "invalidBody": "Este enlace de invitación no es válido, ha caducado o ya se ha usado. Pide a quien te invitó que te envíe uno nuevo.",
     "goToApp": "Ir a la aplicación",
     "signIn": "Iniciar sesión"
+  },
+  "subscribers": {
+    "title": "Suscriptores",
+    "description": "Las personas que reciben los emails de novedades. Mantén la lista sincronizada desde tu aplicación con la API REST.",
+    "tabs": {
+      "all": "Todos",
+      "subscribed": "Suscritos",
+      "unsubscribed": "Dados de baja",
+      "bounced": "Rebotados"
+    },
+    "search": "Buscar por email, nombre o id",
+    "empty": "Todavía no hay suscriptores",
+    "emptyFiltered": "Ningún suscriptor coincide con estos filtros",
+    "emptyDescription": "Crea una API key con los permisos de suscriptores y envía tus usuarios con PUT /api/v1/subscribers/:externalId.",
+    "apiLink": "API keys",
+    "defaultLanguage": "Idioma por defecto",
+    "since": "Desde el {date}",
+    "unsubscribedOn": "Baja el {date}",
+    "status": {
+      "subscribed": "Suscrito",
+      "unsubscribed": "De baja",
+      "bounced": "Rebotado"
+    },
+    "source": {
+      "api": "API",
+      "import": "Importado",
+      "panel": "Panel"
+    },
+    "unsubscribe": "Dar de baja",
+    "unsubscribed": "{email} dado de baja",
+    "resubscribe": "Volver a suscribir",
+    "resubscribeTitle": "¿Volver a suscribir a {email}?",
+    "resubscribeDescription": "Hazlo solo si la persona ha pedido volver a recibir los emails.",
+    "resubscribed": "{email} suscrito de nuevo",
+    "delete": "Eliminar",
+    "deleteTitle": "¿Eliminar a {email}?",
+    "deleteDescription": "Se borran el suscriptor y su baja. Si tu aplicación lo vuelve a sincronizar, quedará suscrito otra vez. Para dejar de enviarle emails, dalo de baja.",
+    "deleted": "{email} eliminado",
+    "next": "Página siguiente",
+    "first": "Primera página",
+    "import": {
+      "button": "Importar CSV",
+      "title": "Importar suscriptores",
+      "description": "Sube un CSV exportado (Brevo, Mailchimp, una hoja de cálculo…). Necesita una columna de email; nombre, idioma, id externo y estado de baja son opcionales.",
+      "file": "Archivo CSV",
+      "tooBig": "El archivo pesa más de 20 MB",
+      "allOptOut": "Todos los de este archivo están de baja",
+      "allOptOutDescription": "Úsalo con una exportación de bajas o de lista de bloqueo.",
+      "summary": "{file}: {count, plural, one {# suscriptor} other {# suscriptores}}, {optOuts, plural, =0 {ninguno de baja} one {# de baja} other {# de baja}}.",
+      "columns": "Columnas detectadas: {columns}",
+      "column": {
+        "email": "Email",
+        "name": "Nombre",
+        "locale": "Idioma",
+        "externalId": "Id externo",
+        "optOut": "Baja"
+      },
+      "skipped": "{count, plural, one {# fila omitida} other {# filas omitidas}}",
+      "line": "Línea {line}",
+      "stickyNote": "Los suscriptores que ya existen se actualizan. Nadie que se haya dado de baja vuelve a quedar suscrito.",
+      "submit": "{count, plural, one {Importar # suscriptor} other {Importar # suscriptores}}",
+      "progress": "Importando {done} de {total}…",
+      "done": "Importación terminada: {created} nuevos, {updated} actualizados, {unchanged} sin cambios"
+    }
   }
 }

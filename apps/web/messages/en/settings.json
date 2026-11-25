@@ -133,7 +133,24 @@
       "below": "Below the title"
     },
     "stickyFooter": "Always show “See all updates”",
-    "stickyFooterDescription": "Pin the link to the bottom of the widget. When off, it appears after the last entry."
+    "stickyFooterDescription": "Pin the link to the bottom of the widget. When off, it appears after the last entry.",
+    "identity": {
+      "title": "Identify signed-in users",
+      "description": "Pass who is signed in to your app, so what they read is remembered on every device and newsletters know who already saw an update.",
+      "enable": "Turn on",
+      "secret": "Widget identity secret",
+      "secretHint": "Keep it on your server, like a password. Your server uses it to sign each user's id.",
+      "serverComment": "On your server, for the signed-in user",
+      "idComment": "the same id you send as externalId to /subscribers",
+      "serverLabel": "Server",
+      "clientLabel": "Widget",
+      "rotate": "Rotate secret",
+      "rotateTitle": "Rotate the secret?",
+      "rotateDescription": "Signatures made with the current secret stop working until your app uses the new one.",
+      "disable": "Turn off",
+      "disableTitle": "Turn off user identification?",
+      "disableDescription": "The widget keeps working anonymously. Reads already recorded are kept."
+    }
   },
   "categories": {
     "title": "Categories",
@@ -273,7 +290,9 @@
         "categories:write": "Manage categories",
         "assets:write": "Upload images",
         "settings:write": "Change settings",
-        "members:admin": "Manage team"
+        "members:admin": "Manage team",
+        "subscribers:read": "View subscribers",
+        "subscribers:write": "Manage subscribers"
       }
     },
     "mcp": {
@@ -363,5 +382,69 @@
     "invalidBody": "This invitation link is invalid, has expired or was already used. Ask the person who invited you to send a new one.",
     "goToApp": "Go to the app",
     "signIn": "Sign in"
+  },
+  "subscribers": {
+    "title": "Subscribers",
+    "description": "People who receive product-update emails. Keep the list in sync from your app with the REST API.",
+    "tabs": {
+      "all": "All",
+      "subscribed": "Subscribed",
+      "unsubscribed": "Unsubscribed",
+      "bounced": "Bounced"
+    },
+    "search": "Search by email, name or id",
+    "empty": "No subscribers yet",
+    "emptyFiltered": "No subscribers match these filters",
+    "emptyDescription": "Create an API key with the subscribers scopes and send your users with PUT /api/v1/subscribers/:externalId.",
+    "apiLink": "API keys",
+    "defaultLanguage": "Default language",
+    "since": "Since {date}",
+    "unsubscribedOn": "Unsubscribed {date}",
+    "status": {
+      "subscribed": "Subscribed",
+      "unsubscribed": "Unsubscribed",
+      "bounced": "Bounced"
+    },
+    "source": {
+      "api": "API",
+      "import": "Import",
+      "panel": "Dashboard"
+    },
+    "unsubscribe": "Unsubscribe",
+    "unsubscribed": "{email} unsubscribed",
+    "resubscribe": "Re-subscribe",
+    "resubscribeTitle": "Re-subscribe {email}?",
+    "resubscribeDescription": "Only do this if the person asked to receive the emails again.",
+    "resubscribed": "{email} subscribed again",
+    "delete": "Delete",
+    "deleteTitle": "Delete {email}?",
+    "deleteDescription": "The subscriber and their opt-out are removed. If your app syncs them again, they will be subscribed again. To stop emails, unsubscribe them instead.",
+    "deleted": "{email} deleted",
+    "next": "Next page",
+    "first": "First page",
+    "import": {
+      "button": "Import CSV",
+      "title": "Import subscribers",
+      "description": "Upload a CSV export (Brevo, Mailchimp, a spreadsheet…). It needs an email column; name, language, external id and unsubscribe status are optional.",
+      "file": "CSV file",
+      "tooBig": "The file is larger than 20 MB",
+      "allOptOut": "Everyone in this file unsubscribed",
+      "allOptOutDescription": "Use it for a blocklist or unsubscribe export.",
+      "summary": "{file}: {count, plural, one {# subscriber} other {# subscribers}}, {optOuts, plural, =0 {none unsubscribed} one {# unsubscribed} other {# unsubscribed}}.",
+      "columns": "Columns found: {columns}",
+      "column": {
+        "email": "Email",
+        "name": "Name",
+        "locale": "Language",
+        "externalId": "External id",
+        "optOut": "Unsubscribed"
+      },
+      "skipped": "{count, plural, one {# row skipped} other {# rows skipped}}",
+      "line": "Line {line}",
+      "stickyNote": "Existing subscribers are updated. Nobody who unsubscribed is subscribed again.",
+      "submit": "{count, plural, one {Import # subscriber} other {Import # subscribers}}",
+      "progress": "Importing {done} of {total}…",
+      "done": "Import finished: {created} new, {updated} updated, {unchanged} unchanged"
+    }
   }
 }

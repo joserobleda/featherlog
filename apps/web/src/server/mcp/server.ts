@@ -4,20 +4,25 @@ import {
   type Ctx,
   countPendingReview,
   createCategory,
+  createNewsletter,
   createPost,
   deletePost,
   getMembershipRole,
+  getNewsletter,
   getPost,
   getWidgetSettings,
   getWorkspace,
   isAppError,
+  listCandidatePosts,
   listCategories,
+  listNewsletters,
   listPosts,
   listUserWorkspaces,
   publishPost,
   requestReview,
   type Scope,
   schedulePost,
+  setNewsletterTranslation,
   setTranslation,
   unpublishPost,
   updatePost,
@@ -32,11 +37,13 @@ import { env } from "@/lib/env";
 import { storeImage } from "@/lib/images";
 import {
   serializeCategory,
+  serializeNewsletter,
   serializePost,
   serializePostWithQueue,
   serializeWorkspace,
 } from "../api/serializers";
 import { fetchPublicUrl } from "../api/ssrf";
+import { queueNewsletterGeneration } from "../jobs";
 
 /** Who is calling the MCP endpoint. */
 export type McpPrincipal =
@@ -48,7 +55,8 @@ const INSTRUCTIONS = `Featherlog is a changelog: you write product updates ("pos
 - Posts have one translation per language (\`translations: { en: { title, contentMd }, es: {...} }\`). Use \`get_workspace\` to see enabled languages and categories.
 - Write content in Markdown. Label a post with categories by adding a paragraph with the category name in brackets, e.g. \`[New]\` or \`[Fix] [Improvement]\` (names in that translation's language). Read the \`featherlog://guide/markdown\` resource for all syntax (video embeds, image sizing).
 - New posts are drafts. Publishing (\`publish_post\`/\`schedule_post\`) may be disabled for integrations by the workspace. Then the post goes to the **review queue** instead (\`status: "in_review"\`): a human approves it from the dashboard. The response includes \`adminUrl\` (link to review it) and \`pendingReviewCount\` (posts waiting in total) — share both when you tell the team (e.g. in Slack) that there is a new update to review. You can also send a draft to review explicitly with \`request_review\`, and list the queue with \`list_posts\` and \`status: "in_review"\`.
-- Prefer updating an existing draft over creating duplicates. Pass \`expectedVersion\` from the last read to avoid overwriting human edits.`;
+- Prefer updating an existing draft over creating duplicates. Pass \`expectedVersion\` from the last read to avoid overwriting human edits.
+- Newsletters are product-update emails made from the posts published since the previous one (\`list_pending_newsletter_posts\`). \`create_newsletter_draft\` prepares one (the server can write it, or you pass the text per language); a person always reviews and sends it from the dashboard, at the returned \`adminUrl\`. You can't send newsletters.`;
 
 function ok(data: unknown) {
   return {
@@ -743,6 +751,126 @@ export function buildMcpServer(principal: McpPrincipal) {
         },
       ],
     }),
+  );
+
+  server.registerTool(
+    "list_pending_newsletter_posts",
+    {
+      title: "Posts waiting for the next newsletter",
+      description:
+        "Published posts that have not gone out in a newsletter yet, oldest first. These are what the next product-update email would include.",
+      inputSchema: z.object({ workspace: workspaceArg }),
+      annotations: { readOnlyHint: true },
+    },
+    async ({ workspace }) =>
+      guarded(async () => {
+        const r = await resolve(workspace);
+        return {
+          items: (await listCandidatePosts(r.ctx)).map((p) => serializePost(r.workspace, p)),
+        };
+      }),
+  );
+
+  server.registerTool(
+    "list_newsletters",
+    {
+      title: "List newsletters",
+      description: "Product-update emails, newest first, with their status and delivery counts.",
+      inputSchema: z.object({ workspace: workspaceArg }),
+      annotations: { readOnlyHint: true },
+    },
+    async ({ workspace }) =>
+      guarded(async () => {
+        const r = await resolve(workspace);
+        return {
+          items: (await listNewsletters(r.ctx, { limit: 20 })).map((n) => {
+            const { translations, ...rest } = serializeNewsletter(r.workspace, n);
+            return {
+              ...rest,
+              subjects: Object.fromEntries(
+                Object.entries(translations).map(([l, t]) => [l, t.subject]),
+              ),
+            };
+          }),
+        };
+      }),
+  );
+
+  server.registerTool(
+    "get_newsletter",
+    {
+      title: "Get a newsletter",
+      description: "A newsletter with its subject, preview text and Markdown body per language.",
+      inputSchema: z.object({ workspace: workspaceArg, id: z.string() }),
+      annotations: { readOnlyHint: true },
+    },
+    async ({ workspace, id }) =>
+      guarded(async () => {
+        const r = await resolve(workspace);
+        return serializeNewsletter(r.workspace, await getNewsletter(r.ctx, id));
+      }),
+  );
+
+  server.registerTool(
+    "create_newsletter_draft",
+    {
+      title: "Create a newsletter draft",
+      description:
+        "Prepares the next product-update email from the posts published since the last one (or the given postIds). Without translations the server writes the draft in every language (status 'generating' for about a minute; read it with get_newsletter). A person reviews and sends it from the dashboard at adminUrl.",
+      inputSchema: z.object({
+        workspace: workspaceArg,
+        postIds: z.array(z.string()).optional().describe("Defaults to every pending post"),
+        featuredPostIds: z.array(z.string()).optional(),
+        translations: z
+          .record(
+            z.string(),
+            z.object({
+              subject: z.string().min(1).max(200),
+              preheader: z.string().max(250).default(""),
+              contentMd: z.string().max(100_000).default(""),
+            }),
+          )
+          .optional()
+          .describe("Your own text per locale. Link to posts with their public URLs."),
+      }),
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+    },
+    async ({ workspace, ...input }) =>
+      guarded(async () => {
+        const r = await resolve(workspace);
+        const generate = !input.translations;
+        const nl = await createNewsletter(r.ctx, {
+          ...input,
+          status: generate ? "generating" : "draft",
+          generator: generate ? (env.aiEnabled ? "ai" : "basic") : "manual",
+        });
+        if (generate) await queueNewsletterGeneration(r.workspace.id, nl.id);
+        return serializeNewsletter(r.workspace, nl);
+      }),
+  );
+
+  server.registerTool(
+    "set_newsletter_translation",
+    {
+      title: "Edit a newsletter draft",
+      description: "Creates or replaces one language of a draft newsletter.",
+      inputSchema: z.object({
+        workspace: workspaceArg,
+        id: z.string(),
+        locale: z.string(),
+        subject: z.string().min(1).max(200),
+        preheader: z.string().max(250).default(""),
+        contentMd: z.string().max(100_000).default(""),
+        expectedVersion: z.number().int().optional(),
+      }),
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true },
+    },
+    async ({ workspace, id, locale, expectedVersion, ...tr }) =>
+      guarded(async () => {
+        const r = await resolve(workspace);
+        const nl = await setNewsletterTranslation(r.ctx, id, locale, tr, { expectedVersion });
+        return serializeNewsletter(r.workspace, nl);
+      }),
   );
 
   return server;

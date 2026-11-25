@@ -8,7 +8,13 @@ export type DomainEvent =
   | "post.deleted"
   | "post.review_requested"
   | "post.review_withdrawn"
-  | "workspace.updated";
+  | "workspace.updated"
+  | "subscriber.unsubscribed"
+  | "subscriber.bounced"
+  | "newsletter.created"
+  | "newsletter.deleted"
+  | "newsletter.sending"
+  | "newsletter.sent";
 
 /** Appends an event to the outbox, in the caller's transaction. */
 export async function emit(

@@ -12,6 +12,10 @@ export const SCOPES = [
   "assets:write",
   "settings:write",
   "members:admin",
+  "subscribers:read",
+  "subscribers:write",
+  "newsletters:read",
+  "newsletters:write",
 ] as const;
 export type Scope = (typeof SCOPES)[number];
 

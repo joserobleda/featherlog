@@ -29,6 +29,10 @@ A key belongs to **one workspace** and acts on behalf of the workspace, not a pe
 | `assets:write` | Upload images. |
 | `settings:write` | Update workspace and widget settings. |
 | `members:admin` | Invite members. |
+| `subscribers:read` | List and read email subscribers. |
+| `subscribers:write` | Create, update, unsubscribe and delete email subscribers. |
+| `newsletters:read` | List newsletters and the posts waiting for the next one. |
+| `newsletters:write` | Create and edit newsletter drafts. Sending is only possible from the dashboard. |
 
 Reading the workspace, locales, categories, widget settings and members only needs a valid key. A missing scope returns `403`.
 
@@ -135,6 +139,16 @@ The API allows any origin, but **never put an API key in browser code**. For pub
 | PATCH | `/widget-settings` | `settings:write` | Update widget settings. |
 | GET | `/members` | — | List members. |
 | POST | `/invitations` | `members:admin` | Invite someone by email. |
+| GET | `/subscribers` | `subscribers:read` | List subscribers. Filters: `status`, `q`, `cursor`, `limit` (up to 200). |
+| GET | `/subscribers/{externalId}` | `subscribers:read` | Get a subscriber by your app's id. |
+| PUT | `/subscribers/{externalId}` | `subscribers:write` | Create or update a subscriber (`201` when created). |
+| POST | `/subscribers/batch` | `subscribers:write` | Create or update up to 500 subscribers in one transaction. |
+| DELETE | `/subscribers/{externalId}` | `subscribers:write` | Delete a subscriber. |
+| GET | `/newsletters` | `newsletters:read` | List newsletters, newest first. |
+| GET | `/newsletters/pending-posts` | `newsletters:read` | Published posts that have not gone out in a newsletter yet. |
+| GET | `/newsletters/{newsletterId}` | `newsletters:read` | Get a newsletter with its text per language. |
+| POST | `/newsletters` | `newsletters:write` | Create a draft from the pending posts (or `postIds`). Without `translations`, the server writes it (status `generating`). |
+| PUT | `/newsletters/{newsletterId}/translations/{locale}` | `newsletters:write` | Create or replace one language of a draft. Supports `If-Match`. |
 
 The interactive reference at `/api/docs` has the full request and response schemas.
 
@@ -228,6 +242,23 @@ curl "$FL/posts?status=published&limit=50&cursor=$NEXT_CURSOR" -H "Authorization
 # posts still missing a Spanish translation
 curl "$FL/posts?missingLocale=es" -H "Authorization: Bearer $KEY"
 ```
+
+### Keep email subscribers in sync
+
+Send each user of your app when they sign up or change their email, name or language. `externalId` is your app's user id, so a changed email updates the same subscriber.
+
+```sh
+curl -X PUT "$FL/subscribers/$USER_ID" \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{ "email": "ana@acme.com", "name": "Ana García", "locale": "es-ES", "attributes": { "org": "Acme" } }'
+```
+
+- Fields you leave out are kept. `locale` accepts any language tag; unsupported languages use the workspace default.
+- **Opt-outs are sticky.** Someone who unsubscribed stays unsubscribed, even if you send `unsubscribed: false`. Only the person, or an admin in **Settings → Subscribers**, can re-subscribe them. Send `unsubscribed: true` to opt someone out (for example, to import opt-outs from another tool).
+- When the user's account is deleted, call `DELETE /subscribers/{externalId}`.
+- To bring a list from another tool (for example a Brevo or Mailchimp export with its unsubscribes), use **Settings → Subscribers → Import CSV**. It needs an `email` column; name, language, external id and unsubscribe status are detected when present.
+- For the first load or a periodic reconciliation, send batches of up to 500 to `POST /subscribers/batch` with `{ "items": [{ "externalId": "…", "email": "…" }] }`. The response counts `created`, `updated` and `unchanged`.
 
 ### From GitHub Actions
 

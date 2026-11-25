@@ -88,7 +88,7 @@ Every domain table hangs off `workspaces` and every core query filters by `ctx.w
 
 ## Events outbox
 
-Core services append domain events (`post.created`, `post.updated`, `post.published`, `post.unpublished`, `post.deleted`, `workspace.updated`) to the `events` table. This is the foundation for webhooks and integrations, such as Slack notifications, email digests and cache purges. Nothing consumes it yet.
+Core services append domain events (`post.created`, `post.updated`, `post.published`, `post.unpublished`, `post.deleted`, `post.review_requested`, `post.review_withdrawn`, `workspace.updated`, `subscriber.unsubscribed`, `newsletter.created`, `newsletter.deleted`, `newsletter.sending`, `newsletter.sent`) to the `events` table. This is the foundation for webhooks and integrations, such as Slack notifications, email digests and cache purges. Nothing consumes it yet.
 
 ## Background jobs
 

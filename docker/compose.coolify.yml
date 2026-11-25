@@ -19,6 +19,11 @@ services:
       # Optional: email (without it, invitations are shared as links)
       - SMTP_URL=${SMTP_URL:-}
       - MAIL_FROM=${MAIL_FROM:-Featherlog <no-reply@localhost>}
+      # Optional: newsletters (Claude drafts, send rate, Mailgun bounce/complaint webhook)
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      - NEWSLETTER_MODEL=${NEWSLETTER_MODEL:-claude-opus-5-5}
+      - NEWSLETTER_RATE_PER_MINUTE=${NEWSLETTER_RATE_PER_MINUTE:-120}
+      - MAILGUN_WEBHOOK_SIGNING_KEY=${MAILGUN_WEBHOOK_SIGNING_KEY:-}
       - WORKER_MODE=inline
       - LOG_LEVEL=${LOG_LEVEL:-info}
     volumes:

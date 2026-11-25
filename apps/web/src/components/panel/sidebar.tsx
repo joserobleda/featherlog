@@ -9,6 +9,8 @@ import {
   KeyRound,
   Languages,
   LogOut,
+  Mail,
+  Newspaper,
   PanelTop,
   Plus,
   Settings,
@@ -70,6 +72,7 @@ export function Sidebar({
     { href: `${base}/settings/categories`, label: t("categories"), icon: Tags, admin: true },
     { href: `${base}/settings/languages`, label: t("languages"), icon: Languages, admin: true },
     { href: `${base}/settings/team`, label: t("team"), icon: Users, admin: false },
+    { href: `${base}/settings/subscribers`, label: t("subscribers"), icon: Mail, admin: true },
     { href: `${base}/settings/api`, label: t("api"), icon: Bot, admin: true },
   ].filter((s) => canManage || !s.admin);
 
@@ -140,6 +143,7 @@ export function Sidebar({
           count: pendingReview,
           title: t("pendingReview", { count: pendingReview }),
         })}
+        {canManage ? link(`${base}/newsletters`, t("newsletters"), Newspaper) : null}
         <a
           href={publicUrl}
           target="_blank"

@@ -4,25 +4,38 @@ import {
   CreateCategoryInput,
   type Ctx,
   createCategory,
+  createNewsletter,
   createPost,
   deleteCategory,
   deletePost,
   deleteTranslation,
+  getNewsletter,
   getPost,
+  getSubscriber,
   getWidgetSettings,
   getWorkspace,
   InviteInput,
   inviteMember,
   isAppError,
+  ListSubscribersInput,
   LOCALES,
+  listCandidatePosts,
   listCategories,
   listMembers,
+  listNewsletters,
   listPosts,
+  listSubscribers,
+  MAX_SUBSCRIBER_BATCH,
+  NewsletterTranslationInput,
   publishPost,
+  removeSubscriber,
   requestReview,
   rerenderWorkspacePosts,
   SCOPES,
+  SUBSCRIBER_STATUSES,
+  type Subscriber,
   schedulePost,
+  setNewsletterTranslation,
   setTranslation,
   TERMINOLOGY,
   UpdateCategoryInput,
@@ -31,6 +44,8 @@ import {
   updatePost,
   updateWidgetSettings,
   updateWorkspace,
+  upsertSubscriber,
+  upsertSubscribersBatch,
   verifyApiKey,
   type Workspace,
   withdrawReview,
@@ -48,11 +63,13 @@ import { storeImage, UploadError } from "@/lib/images";
 import { logger } from "@/lib/logger";
 import { sendMailSafe } from "@/lib/mailer";
 import { appUrl } from "@/lib/urls";
+import { queueNewsletterGeneration } from "../jobs";
 import { memoryRateLimiter } from "./rate-limit";
 import {
   etagOf,
   expectedVersionFrom,
   serializeCategory,
+  serializeNewsletter,
   serializePost,
   serializePostWithQueue,
   serializeWorkspace,
@@ -1078,6 +1095,327 @@ api.openapi(
   },
 );
 
+/* ---------- subscribers ---------- */
+
+const SubscriberOut = z
+  .object({
+    id: z.string(),
+    email: z.string(),
+    externalId: z.string().nullable(),
+    name: z.string().nullable(),
+    locale: z.string().nullable().openapi({ description: "Null means the workspace default" }),
+    attributes: z.record(z.string(), z.string()),
+    status: z.enum(SUBSCRIBER_STATUSES),
+    unsubscribedAt: z.string().nullable(),
+    source: z.string(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+  })
+  .openapi("Subscriber");
+
+const subscriberOut = (s: Subscriber): z.infer<typeof SubscriberOut> => ({
+  id: s.id,
+  email: s.email,
+  externalId: s.externalId,
+  name: s.name,
+  locale: s.locale,
+  attributes: s.attributes,
+  status: s.status as (typeof SUBSCRIBER_STATUSES)[number],
+  unsubscribedAt: s.unsubscribedAt?.toISOString() ?? null,
+  source: s.source,
+  createdAt: s.createdAt.toISOString(),
+  updatedAt: s.updatedAt.toISOString(),
+});
+
+const subscriberFields = {
+  name: z.string().max(200).nullish(),
+  locale: z.string().max(35).nullish().openapi({
+    description:
+      "Any language tag (`es`, `fr-FR`…). Unsupported languages fall back to the workspace default.",
+  }),
+  attributes: z.record(z.string(), z.string().max(500)).optional(),
+  unsubscribed: z.boolean().optional().openapi({
+    description:
+      "`true` opts the person out. `false` or absent never re-subscribes someone who unsubscribed.",
+  }),
+};
+const PutSubscriberBody = z
+  .object({ email: z.string().max(320), ...subscriberFields })
+  .openapi("PutSubscriber");
+const BatchSubscriberItem = z
+  .object({
+    email: z.string().max(320),
+    externalId: z.string().max(200).optional(),
+    ...subscriberFields,
+  })
+  .openapi("BatchSubscriber");
+const ExternalIdParam = z.object({
+  externalId: z
+    .string()
+    .min(1)
+    .max(200)
+    .openapi({
+      param: { name: "externalId", in: "path" },
+      description: "The person's id in your app",
+    }),
+});
+
+api.openapi(
+  createRoute({
+    method: "get",
+    path: "/subscribers",
+    tags: ["Subscribers"],
+    summary: "List subscribers",
+    description: "Requires `subscribers:read`. Newest first, cursor-paginated.",
+    request: { query: ListSubscribersInput },
+    responses: {
+      200: json(z.object({ items: z.array(SubscriberOut), nextCursor: z.string().nullable() })),
+      ...errorResponses,
+    },
+  }),
+  async (c) => {
+    const page = await listSubscribers(ctx(c), c.req.valid("query"));
+    return c.json({ items: page.items.map(subscriberOut), nextCursor: page.nextCursor }, 200);
+  },
+);
+
+api.openapi(
+  createRoute({
+    method: "get",
+    path: "/subscribers/{externalId}",
+    tags: ["Subscribers"],
+    summary: "Get a subscriber",
+    description: "Requires `subscribers:read`.",
+    request: { params: ExternalIdParam },
+    responses: { 200: json(SubscriberOut), ...errorResponses },
+  }),
+  async (c) =>
+    c.json(
+      subscriberOut(await getSubscriber(ctx(c), { externalId: c.req.valid("param").externalId })),
+      200,
+    ),
+);
+
+api.openapi(
+  createRoute({
+    method: "put",
+    path: "/subscribers/{externalId}",
+    tags: ["Subscribers"],
+    summary: "Create or update a subscriber",
+    description:
+      "Requires `subscribers:write`. Matches by `externalId`, then by email. Fields you leave out are kept. Someone who unsubscribed stays unsubscribed.",
+    request: {
+      params: ExternalIdParam,
+      body: { content: { "application/json": { schema: PutSubscriberBody } } },
+    },
+    responses: {
+      200: json(SubscriberOut, "Updated or unchanged"),
+      201: json(SubscriberOut, "Created"),
+      ...errorResponses,
+    },
+  }),
+  async (c) => {
+    const { externalId } = c.req.valid("param");
+    const r = await upsertSubscriber(ctx(c), { ...c.req.valid("json"), externalId });
+    return c.json(subscriberOut(r.subscriber), r.result === "created" ? 201 : 200);
+  },
+);
+
+api.openapi(
+  createRoute({
+    method: "post",
+    path: "/subscribers/batch",
+    tags: ["Subscribers"],
+    summary: "Create or update subscribers in bulk",
+    description: `Requires \`subscribers:write\`. Up to ${MAX_SUBSCRIBER_BATCH} items, applied in one transaction with the same rules as the single upsert.`,
+    request: {
+      headers: IdemHeader,
+      body: {
+        content: {
+          "application/json": {
+            schema: z.object({ items: z.array(BatchSubscriberItem).max(MAX_SUBSCRIBER_BATCH) }),
+          },
+        },
+      },
+    },
+    responses: {
+      200: json(z.object({ created: z.number(), updated: z.number(), unchanged: z.number() })),
+      ...errorResponses,
+    },
+  }),
+  async (c) => {
+    const body = c.req.valid("json");
+    return idempotent(c, body, async () => ({
+      status: 200,
+      body: await upsertSubscribersBatch(ctx(c), body.items),
+    }));
+  },
+);
+
+api.openapi(
+  createRoute({
+    method: "delete",
+    path: "/subscribers/{externalId}",
+    tags: ["Subscribers"],
+    summary: "Delete a subscriber",
+    description:
+      "Requires `subscribers:write`. Use it when the person's account is deleted. To stop emails but remember the opt-out, send `unsubscribed: true` instead.",
+    request: { params: ExternalIdParam },
+    responses: { 204: { description: "Deleted" }, ...errorResponses },
+  }),
+  async (c) => {
+    await removeSubscriber(ctx(c), { externalId: c.req.valid("param").externalId });
+    return c.body(null, 204);
+  },
+);
+
+/* ---------- newsletters ---------- */
+
+const NewsletterOut = z
+  .object({
+    id: z.string(),
+    status: z.enum(["generating", "draft", "sending", "sent", "failed"]),
+    generator: z.string(),
+    error: z.string().nullable(),
+    periodFrom: z.string().nullable(),
+    periodTo: z.string().nullable(),
+    createdVia: z.string(),
+    actorLabel: z.string().nullable(),
+    version: z.number(),
+    recipients: z.number(),
+    sentCount: z.number(),
+    failedCount: z.number(),
+    sentAt: z.string().nullable(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+    translations: z.record(
+      z.string(),
+      z.object({
+        locale: z.string(),
+        subject: z.string(),
+        preheader: z.string(),
+        contentMd: z.string(),
+      }),
+    ),
+    posts: z.array(z.object({ postId: z.string(), position: z.number(), featured: z.boolean() })),
+    adminUrl: z.string().openapi({ description: "Where a person reviews and sends it" }),
+  })
+  .openapi("Newsletter");
+
+const NewsletterIdParam = z.object({
+  newsletterId: z.string().openapi({ param: { name: "newsletterId", in: "path" } }),
+});
+
+api.openapi(
+  createRoute({
+    method: "get",
+    path: "/newsletters",
+    tags: ["Newsletters"],
+    summary: "List newsletters",
+    description: "Requires `newsletters:read`. Newest first.",
+    responses: { 200: json(z.object({ items: z.array(NewsletterOut) })), ...errorResponses },
+  }),
+  async (c) =>
+    c.json(
+      { items: (await listNewsletters(ctx(c))).map((n) => serializeNewsletter(ws(c), n)) },
+      200,
+    ),
+);
+
+api.openapi(
+  createRoute({
+    method: "get",
+    path: "/newsletters/pending-posts",
+    tags: ["Newsletters"],
+    summary: "Posts waiting for the next newsletter",
+    description:
+      "Requires `newsletters:read`. Published posts that have not gone out in a newsletter yet, oldest first.",
+    responses: { 200: json(z.object({ items: z.array(PostOut) })), ...errorResponses },
+  }),
+  async (c) =>
+    c.json({ items: (await listCandidatePosts(ctx(c))).map((p) => serializePost(ws(c), p)) }, 200),
+);
+
+api.openapi(
+  createRoute({
+    method: "get",
+    path: "/newsletters/{newsletterId}",
+    tags: ["Newsletters"],
+    summary: "Get a newsletter",
+    request: { params: NewsletterIdParam },
+    responses: { 200: json(NewsletterOut), ...errorResponses },
+  }),
+  async (c) =>
+    c.json(
+      serializeNewsletter(ws(c), await getNewsletter(ctx(c), c.req.valid("param").newsletterId)),
+      200,
+    ),
+);
+
+api.openapi(
+  createRoute({
+    method: "post",
+    path: "/newsletters",
+    tags: ["Newsletters"],
+    summary: "Create a newsletter draft",
+    description:
+      "Requires `newsletters:write`. Takes the posts published since the last newsletter (or `postIds`). Without `translations`, the server writes the draft (with Claude when configured) and the newsletter is `generating` until it's ready. Newsletters are always sent by a person from the dashboard (`adminUrl`).",
+    request: {
+      headers: IdemHeader,
+      body: {
+        content: {
+          "application/json": {
+            schema: z.object({
+              postIds: z.array(z.string()).min(1).max(200).optional(),
+              translations: z.record(z.string(), NewsletterTranslationInput).optional(),
+              featuredPostIds: z.array(z.string()).optional(),
+            }),
+          },
+        },
+      },
+    },
+    responses: { 201: json(NewsletterOut, "Created"), ...errorResponses },
+  }),
+  async (c) => {
+    const body = c.req.valid("json");
+    return idempotent(c, body, async () => {
+      const generate = !body.translations;
+      const nl = await createNewsletter(ctx(c), {
+        ...body,
+        status: generate ? "generating" : "draft",
+        generator: generate ? (env.aiEnabled ? "ai" : "basic") : "manual",
+      });
+      if (generate) await queueNewsletterGeneration(ws(c).id, nl.id);
+      return { status: 201, body: serializeNewsletter(ws(c), nl) };
+    });
+  },
+);
+
+api.openapi(
+  createRoute({
+    method: "put",
+    path: "/newsletters/{newsletterId}/translations/{locale}",
+    tags: ["Newsletters"],
+    summary: "Create or replace one language of a draft",
+    description: "Requires `newsletters:write`. Only drafts can be edited.",
+    request: {
+      params: NewsletterIdParam.extend({
+        locale: z.string().openapi({ param: { name: "locale", in: "path" } }),
+      }),
+      headers: IfMatch,
+      body: { content: { "application/json": { schema: NewsletterTranslationInput } } },
+    },
+    responses: { 200: json(NewsletterOut), ...errorResponses },
+  }),
+  async (c) => {
+    const { newsletterId, locale } = c.req.valid("param");
+    const nl = await setNewsletterTranslation(ctx(c), newsletterId, locale, c.req.valid("json"), {
+      expectedVersion: expectedVersionFrom(c.req.header("if-match")),
+    });
+    return c.json(serializeNewsletter(ws(c), nl), 200);
+  },
+);
+
 /* ---------- OpenAPI document ---------- */
 
 api.openAPIRegistry.registerComponent("securitySchemes", "apiKey", {
@@ -1092,7 +1430,7 @@ api.doc31("/openapi.json", () => ({
     title: "Featherlog API",
     version: "1.0.0",
     description:
-      "Manage your Featherlog changelog: posts, translations, categories, images and widget settings.\n\nAuthenticate with a workspace API key: `Authorization: Bearer fl_live_…`. Retries are safe with `Idempotency-Key`; concurrent edits are protected with `ETag`/`If-Match`. Errors use RFC 9457 `application/problem+json`.",
+      "Manage your Featherlog changelog: posts, translations, categories, images, widget settings and email subscribers.\n\nAuthenticate with a workspace API key: `Authorization: Bearer fl_live_…`. Retries are safe with `Idempotency-Key`; concurrent edits are protected with `ETag`/`If-Match`. Errors use RFC 9457 `application/problem+json`.",
   },
   servers: [{ url: env.APP_URL }],
   security: [{ apiKey: [] }],
@@ -1103,5 +1441,7 @@ api.doc31("/openapi.json", () => ({
     { name: "Widget" },
     { name: "Workspace" },
     { name: "Team" },
+    { name: "Subscribers" },
+    { name: "Newsletters" },
   ],
 }));

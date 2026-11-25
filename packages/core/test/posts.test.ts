@@ -282,7 +282,10 @@ describe("permissions", () => {
     expect(draft.actorLabel).toBe("CI bot");
     expect(draft.author).toBeNull();
     expect((await publishPost(key, draft.id)).status).toBe("in_review");
-    const viaCreate = await createPost(key, { translations: { en: { title: "x" } }, publish: true });
+    const viaCreate = await createPost(key, {
+      translations: { en: { title: "x" } },
+      publish: true,
+    });
     expect(viaCreate.status).toBe("in_review");
     expect(viaCreate.published).toBe(false);
     await updateWorkspace(f.owner, { integrationsCanPublish: true });

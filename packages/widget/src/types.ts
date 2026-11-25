@@ -84,6 +84,12 @@ export type WidgetConfig = {
   token?: string;
   language?: string;
   widgetUrl?: string;
+  /**
+   * The signed-in user of the host app, so what they read is remembered across devices and
+   * counted for newsletters. `hash` is `hex(HMAC-SHA256(identity secret, id))`, computed on the
+   * host app's server.
+   */
+  user?: { id: string; hash: string };
 };
 
 export type NormalizedConfig = {
@@ -97,4 +103,5 @@ export type NormalizedConfig = {
   token: string;
   language: string;
   widgetUrl: string;
+  user: { id: string; hash: string } | null;
 };

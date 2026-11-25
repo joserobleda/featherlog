@@ -138,6 +138,11 @@ It requires Node.js 20 or newer. Set `FEATHERLOG_DEBUG=1` to log protocol errors
 | `upload_image` | Uploads an image from a public URL or base64 data. Returns its URL and a ready-made `![](url)`. |
 | `get_widget_settings` | Widget behavior settings and the embed snippet. |
 | `update_widget_settings` | Changes the badge delay, posts shown, count expiry, soft hide, eye-catcher or color. |
+| `list_pending_newsletter_posts` | Published posts that the next newsletter would include. |
+| `list_newsletters` | Newsletters with their status, subjects and delivery counts. |
+| `get_newsletter` | A newsletter with its subject, preview text and Markdown body per language. |
+| `create_newsletter_draft` | Prepares the next newsletter. Without `translations`, the server writes it. A person sends it from the dashboard (`adminUrl`). |
+| `set_newsletter_translation` | Creates or replaces one language of a draft newsletter. |
 
 Write tools accept `expectedVersion`, the `version` from the last read. If someone edited the post in the meantime, the call fails instead of overwriting their changes.
 

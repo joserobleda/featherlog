@@ -42,6 +42,17 @@ Boolean variables accept `true`/`1` (on) and `false`/`0`/empty (off).
 | `SMTP_URL` | — | Optional SMTP connection URL (`smtps://user:pass@host:465` or `smtp://user:pass@host:587`). Without it, emails are skipped: invitations are shared as links from the dashboard, email verification is off, and magic-link sign-in / password reset are hidden. In development, `apps/web/.env.example` points it at Mailpit. |
 | `MAIL_FROM` | `Featherlog <no-reply@localhost>` | Sender for verification emails, magic links, password resets and invitations. |
 
+## Newsletters
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `ANTHROPIC_API_KEY` | — | Optional. Claude writes newsletter drafts. Without it, drafts list each post's title and excerpt. See [Newsletters](newsletters.md). |
+| `NEWSLETTER_MODEL` | `claude-opus-5-5` | Claude model for newsletter drafts. |
+| `NEWSLETTER_RATE_PER_MINUTE` | `120` | Most newsletter emails sent per minute. Keep it under your SMTP provider's limit. |
+| `MAILGUN_WEBHOOK_SIGNING_KEY` | — | Mailgun's HTTP webhook signing key. Turns on `/api/webhooks/mailgun`, which records bounces, spam complaints and unsubscribes. See [Sending with Mailgun](newsletters.md#sending-with-mailgun). |
+
+Newsletters are sent through `SMTP_URL` with `MAIL_FROM`'s address and the workspace's sender name.
+
 ## Sign-in
 
 | Variable | Default | Description |

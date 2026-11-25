@@ -49,6 +49,7 @@ Copy the snippet from **Settings → Widget**:
 | `language` | string | Forces a language (`"es"`, `"pt-BR"` → `pt`). It must be enabled in the workspace, or the default language is used. |
 | `widgetUrl` | string | Base URL of your Featherlog widget host. Normally it is detected from the script's `src`. Set it when you bundle or proxy `widget.js` yourself. |
 | `token` | string | Reserved. It is passed to the iframe but has no effect yet. |
+| `user` | `{ id, hash }` | The signed-in user of your app. See [Identify signed-in users](#identify-signed-in-users). |
 
 Example with everything:
 
@@ -248,6 +249,32 @@ curl https://changelog.example.com/api/widget/YOUR_ACCOUNT_ID?lang=en
 - `items` holds the latest *Posts shown* posts. `html` is sanitized.
 - Unknown accounts return `404`.
 
+## Identify signed-in users
+
+Pass who is signed in, and Featherlog remembers what each person has seen on every device, and counts it for [newsletters](newsletters.md#identified-readers).
+
+1. In **Settings → Widget → Identify signed-in users**, click **Turn on** and copy the secret to your server (for example as `FEATHERLOG_WIDGET_SECRET`).
+2. On your server, sign the user's id. Use the same id you send as `externalId` to the [subscribers API](api.md#keep-email-subscribers-in-sync):
+
+   ```js
+   import { createHmac } from "node:crypto";
+   const hash = createHmac("sha256", process.env.FEATHERLOG_WIDGET_SECRET)
+     .update(String(user.id))
+     .digest("hex");
+   ```
+
+3. Pass both to the widget:
+
+   ```js
+   var HW_config = {
+     account: "YOUR_ACCOUNT_ID",
+     selector: ".featherlog-badge",
+     user: { id: String(user.id), hash: hash },
+   };
+   ```
+
+The widget then calls `POST <widget host>/api/widget/<account>/seen` when it loads and when the person opens it. Featherlog rejects ids without a valid signature, and only records reads for people who are subscribers. Never put the secret in browser code. **Rotate secret** in the same card invalidates every signature.
+
 ## Privacy
 
 - **No cookies.** The widget sets no cookies, on your domain or on Featherlog's.
@@ -256,7 +283,8 @@ curl https://changelog.example.com/api/widget/YOUR_ACCOUNT_ID?lang=en
   - `featherlog:<account>:read`: ids of posts opened
   - `featherlog:<account>:views`: page views with unseen posts (for the progressive eye-catcher)
 - If `localStorage` isn't available, the widget still works, but every post counts as new.
-- Featherlog doesn't track visitors. The iframe makes no network requests besides its own assets, and images and videos inside posts. Video embeds use privacy-friendly players (`youtube-nocookie.com`, Vimeo, Loom, Wistia) and are lazy-loaded.
+- With [identified users](#identify-signed-in-users), the widget also sends the signed user id and the ids of the posts they saw to your Featherlog server. Without `user`, nothing leaves the browser.
+- Featherlog doesn't track anonymous visitors. The iframe makes no network requests besides its own assets, and images and videos inside posts. Video embeds use privacy-friendly players (`youtube-nocookie.com`, Vimeo, Loom, Wistia) and are lazy-loaded.
 - **Private mode** (Settings → Public page) keeps the public page out of reach unless the visitor arrives through a signed link from the widget, valid for about an hour, or is a workspace member. The widget itself, and `/api/widget/<account>`, still show your latest posts to anyone who loads them with your account id.
 
 ## Content Security Policy on your site
