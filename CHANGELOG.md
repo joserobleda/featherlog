@@ -6,6 +6,8 @@ All notable changes to Featherlog are documented here. The format follows [Keep 
 
 ### Added
 
+- Newsletter drafts show each featured post's first image, linked to the post, and Claude writes shorter, easier-to-skim text that keeps the posts' emojis.
+
 - Newsletter setting **Include posts since**: posts published before that date never go in an email, so the first one from Featherlog starts where the last email from another tool left off.
 
 ### Fixed

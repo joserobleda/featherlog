@@ -1,6 +1,7 @@
 import type { Post, Workspace } from "@featherlog/core";
 import { fill, newsletterStrings } from "@/lib/newsletter-i18n";
 import { postUrl } from "@/lib/public-urls";
+import { appUrl } from "@/lib/urls";
 
 /** What a writer decides for one language; the app turns it into Markdown with real links. */
 export type EditionPlan = {
@@ -32,6 +33,17 @@ export function linkFor(ws: Workspace, post: Post, locale: string) {
   return postUrl(ws, { slug: tr.slug, publicId: post.publicId }, tr.locale);
 }
 
+/** First image of the post in `locale` (absolute URL), to illustrate it in the email. */
+export function imageFor(ws: Workspace, post: Post, locale: string) {
+  const src = translationFor(post, locale, ws.defaultLocale).contentHtml?.match(
+    /<img\b[^>]*?\ssrc="([^"]+)"/i,
+  )?.[1];
+  if (!src) return null;
+  const url = src.replace(/&amp;/g, "&");
+  if (/^https?:\/\//i.test(url)) return url;
+  return url.startsWith("/") ? appUrl(url) : null;
+}
+
 const oneLine = (s: string) => s.replace(/\s+/g, " ").trim();
 const mdText = (s: string) => oneLine(s).replace(/([\\[\]])/g, "\\$1");
 
@@ -61,8 +73,15 @@ export function editionMarkdown(plan: EditionPlan, posts: Post[], ws: Workspace,
   const parts: string[] = [];
   if (plan.intro.trim()) parts.push(plan.intro.trim());
   for (const item of plan.featured) {
-    const url = linkFor(ws, byId.get(item.postId)!, locale);
-    parts.push(`## ${oneLine(item.title)}`, item.summary.trim(), `[${t.readMore} →](${url})`);
+    const post = byId.get(item.postId)!;
+    const url = linkFor(ws, post, locale);
+    const image = imageFor(ws, post, locale);
+    parts.push(
+      `## ${oneLine(item.title)}`,
+      image ? `[![](${image})](${url})` : "",
+      item.summary.trim(),
+      `[${t.readMore} →](${url})`,
+    );
   }
   if (plan.brief.length) {
     if (plan.featured.length) parts.push(`### ${t.alsoNew}`);
