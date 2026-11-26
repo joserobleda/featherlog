@@ -47,8 +47,17 @@ export async function emailBodyHtml(md: string, accent: string, baseUrl: string)
         /<(h1|h2|h3|p|ul|ol|li|blockquote|img|hr|pre|code|table|td|th)(\s|>|\/)/g,
         (_m, tag, next) => `<${tag} style="${STYLES[tag]}"${next}`,
       )
+      .replace(/<img([^>]*?)\ssrc="([^"]+)"/g, (_m, before: string, src: string) => {
+        const url = emailImageUrl(src.replace(/&amp;/g, "&")).replace(/&/g, "&amp;");
+        return `<img${before} src="${url}"`;
+      })
       .replace(/<a\s/g, `<a style="color:${accent};text-decoration:underline" `)
   );
+}
+
+/** Our own WebP/AVIF uploads go out as their PNG/JPEG copy, which every email client shows. */
+export function emailImageUrl(url: string) {
+  return /\/uploads\/[^?#]+\.(webp|avif)$/i.test(url) ? `${url}?format=email` : url;
 }
 
 /** Plain-text part: the Markdown with links spelled out. */
@@ -77,7 +86,7 @@ export async function renderEdition(
   const all = listUrl(ws, locale);
   const footer = settings.footerText.trim();
   const logo = ws.logoUrl
-    ? `<img src="${esc(ws.logoUrl)}" alt="${esc(ws.name)}" height="32" style="height:32px;max-width:200px;vertical-align:middle">`
+    ? `<img src="${esc(emailImageUrl(ws.logoUrl))}" alt="${esc(ws.name)}" height="32" style="height:32px;max-width:200px;vertical-align:middle">`
     : `<span style="font-weight:700;font-size:18px;color:#111827">${esc(ws.name)}</span>`;
 
   return (unsubscribeUrl: string): RenderedEdition => ({

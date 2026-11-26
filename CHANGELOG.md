@@ -6,6 +6,8 @@ All notable changes to Featherlog are documented here. The format follows [Keep 
 
 ### Added
 
+- Newsletters send WebP/AVIF images (logo and post screenshots) as a PNG or JPEG copy (`/uploads/…?format=email`), so Outlook shows them and Gmail no longer paints transparent logos black. In the "Also new" list, a title's emoji stays outside the link.
+
 - Newsletter drafts show each featured post's first image, linked to the post, and Claude writes shorter, easier-to-skim text that keeps the posts' emojis.
 
 - Newsletter setting **Include posts since**: posts published before that date never go in an email, so the first one from Featherlog starts where the last email from another tool left off.

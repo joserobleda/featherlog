@@ -44,6 +44,9 @@ export function imageFor(ws: Workspace, post: Post, locale: string) {
   return url.startsWith("/") ? appUrl(url) : null;
 }
 
+const LEADING_EMOJI =
+  /^(\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*)\s*(.+)$/u;
+
 const oneLine = (s: string) => s.replace(/\s+/g, " ").trim();
 const mdText = (s: string) => oneLine(s).replace(/([\\[\]])/g, "\\$1");
 
@@ -90,7 +93,9 @@ export function editionMarkdown(plan: EditionPlan, posts: Post[], ws: Workspace,
         .map((item) => {
           const url = linkFor(ws, byId.get(item.postId)!, locale);
           const summary = oneLine(item.summary);
-          return `- **[${mdText(item.title)}](${url})**${summary ? ` — ${summary}` : ""}`;
+          // A leading emoji stays outside the link, so the underline starts at the words.
+          const [, emoji = "", title = item.title] = oneLine(item.title).match(LEADING_EMOJI) ?? [];
+          return `- ${emoji ? `${emoji} ` : ""}**[${mdText(title)}](${url})**${summary ? ` — ${summary}` : ""}`;
         })
         .join("\n"),
     );
