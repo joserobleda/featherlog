@@ -57,6 +57,13 @@
       "when": 1795613463100,
       "tag": "0007_post_views",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1795649291485,
+      "tag": "0008_newsletter_posts_since",
+      "breakpoints": true
     }
   ]
 }

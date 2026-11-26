@@ -30,6 +30,7 @@ Integrations can prepare drafts through the REST API (`POST /newsletters`) and M
 - **Reply-to address**: where replies go.
 - **Footer**: company name and postal address. Anti-spam laws (CAN-SPAM, and similar rules in the EU) require a postal address in marketing email.
 - **Guidance for the AI writer**: tone, audience, what to highlight or avoid.
+- **Include posts since**: posts published before this date never go in an email. Set it to the date of the last email you sent with another tool, so the first one from Featherlog doesn't repeat old posts.
 - **Skip people who already read it**: see [Identified readers](#identified-readers).
 
 ## Unsubscribing

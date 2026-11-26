@@ -75,6 +75,8 @@
   "aiInstructions": "Indicaciones para el redactor con IA",
   "aiInstructionsHint": "Tono, público, qué destacar o evitar. Se usan cuando Claude redacta un borrador.",
   "settingsSaved": "Ajustes guardados",
+  "postsSince": "Incluir entradas desde",
+  "postsSinceHint": "Las entradas publicadas antes de esta fecha nunca van en un email. Úsalo al empezar, con la fecha del último email que enviaste con otra herramienta.",
   "skipReaders": "No enviar a quien ya lo ha leído",
   "skipReadersHint": "No envía el email a los suscriptores que ya vieron todas las entradas de la newsletter en el widget (necesita la identificación de usuarios en Ajustes → Widget).",
   "emailReaders": "{count, plural, =0 {Nadie ha abierto todavía una entrada desde este email.} one {# persona abrió una entrada desde este email.} other {# personas abrieron una entrada desde este email.}}",

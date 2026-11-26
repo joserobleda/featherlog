@@ -39,6 +39,7 @@ export default async function NewsletterSettingsPage({
           footerText: s.footerText,
           aiInstructions: s.aiInstructions,
           skipReaders: s.skipReaders,
+          postsSince: s.postsSince?.toISOString().slice(0, 10) ?? "",
         }}
       />
     </div>

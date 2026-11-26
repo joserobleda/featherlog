@@ -442,6 +442,8 @@ export const newsletterSettings = pgTable("newsletter_settings", {
   aiInstructions: text("ai_instructions").notNull().default(""),
   /** Skip subscribers who already saw every post of the newsletter in the widget. */
   skipReaders: boolean("skip_readers").notNull().default(false),
+  /** Posts published before this never go in an email (e.g. the last one sent with another tool). */
+  postsSince: timestamp("posts_since", { withTimezone: true }),
   updatedAt: updatedAt(),
 });
 

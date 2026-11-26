@@ -75,6 +75,8 @@
   "aiInstructions": "Guidance for the AI writer",
   "aiInstructionsHint": "Tone, audience, what to highlight or avoid. Used when Claude writes a draft.",
   "settingsSaved": "Settings saved",
+  "postsSince": "Include posts since",
+  "postsSinceHint": "Posts published before this date never go in an email. Use it when you start, with the date of the last email you sent with another tool.",
   "skipReaders": "Skip people who already read it",
   "skipReadersHint": "Don't email subscribers who already saw every post of the newsletter in the widget (needs identified users in Settings → Widget).",
   "emailReaders": "{count, plural, =0 {Nobody has opened a post from this email yet.} one {# person opened a post from this email.} other {# people opened a post from this email.}}",
