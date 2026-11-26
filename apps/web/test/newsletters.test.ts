@@ -26,7 +26,14 @@ const post = (id: string, daysAgo: number, tr: Record<string, [string, string]>)
     translations: Object.fromEntries(
       Object.entries(tr).map(([locale, [title, excerpt]]) => [
         locale,
-        { locale, title, slug: title.toLowerCase().replace(/\W+/g, "-"), excerpt, text: excerpt },
+        {
+          locale,
+          title,
+          slug: title.toLowerCase().replace(/\W+/g, "-"),
+          excerpt,
+          text: excerpt,
+          contentHtml: `<p>${excerpt}</p>${id === "b" ? '<p><img src="/uploads/images/x/shot.gif" alt=""></p>' : ""}`,
+        },
       ]),
     ),
   }) as unknown as Post;
@@ -56,6 +63,10 @@ describe("newsletter drafts", () => {
     expect(es.contentMd).toContain("/acme/dark-mode-pc");
     expect(es.contentMd).toContain("### Otras novedades");
     expect(d.translations.en!.contentMd).toContain("[Read more →]");
+    // Featured posts show their first image, linked to the post.
+    expect(es.contentMd).toMatch(
+      /\[!\[\]\(http[^)]*\/uploads\/images\/x\/shot\.gif\)\]\(http[^)]*informes-pb\)/,
+    );
   });
 
   it("keeps every post exactly once whatever the writer returns", () => {
