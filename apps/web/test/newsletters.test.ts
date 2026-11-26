@@ -3,7 +3,12 @@ import { describe, expect, it } from "vitest";
 import { fromWithName } from "@/lib/mailer";
 import { unsubscribeToken, verifyUnsubscribeToken } from "@/lib/unsubscribe-tokens";
 import { basicDraft, editionMarkdown, normalizePlan } from "@/server/newsletters/draft";
-import { emailBodyHtml, emailBodyText, renderEdition } from "@/server/newsletters/email";
+import {
+  emailBodyHtml,
+  emailBodyText,
+  emailImageUrl,
+  renderEdition,
+} from "@/server/newsletters/email";
 
 const ws = {
   id: "ws1",
@@ -110,6 +115,22 @@ describe("newsletter drafts", () => {
     );
     expect(md).toContain("**[SSO \\[beta\\]](");
   });
+
+  it("keeps a title's leading emoji outside the link", () => {
+    const md = editionMarkdown(
+      {
+        subject: "",
+        preheader: "",
+        intro: "",
+        featured: [],
+        brief: [{ postId: "d", title: "🔐 Whistleblowing permissions", summary: "" }],
+      },
+      posts,
+      ws,
+      "en",
+    );
+    expect(md).toMatch(/^- 🔐 \*\*\[Whistleblowing permissions\]\(/);
+  });
 });
 
 describe("newsletter emails", () => {
@@ -123,6 +144,17 @@ describe("newsletter emails", () => {
     expect(html).toContain('<h2 style="');
     expect(html).toContain("color:#112233");
     expect(html).toMatch(/<a [^>]*href="https:\/\/www\.youtube-nocookie\.com[^"]*"[^>]*>▶/);
+  });
+
+  it("sends our WebP images as their email-safe copy", async () => {
+    const html = await emailBodyHtml(
+      "![](https://app.test/uploads/images/x/a.webp) ![](https://app.test/uploads/images/x/b.gif)",
+      "#112233",
+      "https://changelog.test/acme",
+    );
+    expect(html).toContain('src="https://app.test/uploads/images/x/a.webp?format=email"');
+    expect(html).toContain('src="https://app.test/uploads/images/x/b.gif"');
+    expect(emailImageUrl("https://cdn.other.com/a.webp")).toBe("https://cdn.other.com/a.webp");
   });
 
   it("spells out links in the text part", () => {

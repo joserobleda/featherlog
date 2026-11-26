@@ -1,4 +1,5 @@
 import { storage } from "@/lib/storage";
+import { emailCopy, needsEmailCopy } from "@/server/media";
 
 export const dynamic = "force-dynamic";
 
@@ -23,14 +24,19 @@ const notFound = () =>
     headers: { "Content-Type": "text/plain", "X-Content-Type-Options": "nosniff" },
   });
 
-export async function GET(_req: Request, { params }: { params: Promise<{ key: string[] }> }) {
+export async function GET(req: Request, { params }: { params: Promise<{ key: string[] }> }) {
   const { key: parts } = await params;
   let key: string;
   let file: Awaited<ReturnType<typeof storage.get>>;
   try {
     key = parts.map((p) => decodeURIComponent(p)).join("/");
     if (!key || key.includes("..") || key.includes("\0")) return notFound();
-    file = await storage.get(key);
+    // `?format=email`: a PNG/JPEG copy of WebP/AVIF images, for newsletters.
+    if (needsEmailCopy(key) && new URL(req.url).searchParams.get("format") === "email") {
+      const copy = await emailCopy(key);
+      if (copy) key = copy.key;
+      file = copy ? { body: copy.body } : null;
+    } else file = await storage.get(key);
   } catch {
     return notFound();
   }

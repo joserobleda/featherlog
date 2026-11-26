@@ -62,3 +62,30 @@ export async function storeImage(
   });
   return { ...asset, url: storage.url(key) };
 }
+
+/** WebP and AVIF uploads that email clients can't show everywhere (Outlook, Gmail's alpha). */
+export const needsEmailCopy = (key: string) => /\.(webp|avif)$/i.test(key);
+
+/**
+ * An email-safe copy of a stored image: PNG when it has transparency, JPEG otherwise, at most
+ * 1200 px wide. Made on first request and kept next to the original (`<key>.png` / `<key>.jpg`).
+ */
+export async function emailCopy(key: string): Promise<{ key: string; body: Buffer } | null> {
+  for (const ext of ["png", "jpg"]) {
+    const found = await storage.get(`${key}.${ext}`);
+    if (found) return { key: `${key}.${ext}`, body: found.body };
+  }
+  const original = await storage.get(key);
+  if (!original) return null;
+  const image = sharp(original.body).rotate().resize({ width: 1200, withoutEnlargement: true });
+  const { hasAlpha } = await sharp(original.body).metadata();
+  const [ext, mime, body] = hasAlpha
+    ? (["png", "image/png", await image.png({ compressionLevel: 9 }).toBuffer()] as const)
+    : ([
+        "jpg",
+        "image/jpeg",
+        await image.flatten({ background: "#ffffff" }).jpeg({ quality: 85 }).toBuffer(),
+      ] as const);
+  await storage.put(`${key}.${ext}`, body, mime);
+  return { key: `${key}.${ext}`, body };
+}
